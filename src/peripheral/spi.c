@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
  * @file modules/mcu/src/spi.c
- * @authors Charles Faisandier
+ * @authors Charles Faisandier, Jude Merritt
  * @brief Implementation of SPI driver interface
  */
 #include "spi.h"
@@ -167,9 +167,10 @@ int spi_init(uint8_t instance, spi_config_t *spi_config) {
 
     // Set alternate function
     // TODO: Set alternate function
-    tal_alternate_mode(spi_config->clk_pin, 4);
-    tal_alternate_mode(spi_config->mosi_pin, 4);
-    tal_alternate_mode(spi_config->miso_pin, 4);
+    tal_alternate_mode(spi_config->clk_pin, 6);
+    tal_alternate_mode(spi_config->mosi_pin, 6);
+    tal_alternate_mode(spi_config->miso_pin, 6);
+
     // Set gpio speed
     tal_set_speed(spi_config->miso_pin, 3);
     tal_set_speed(spi_config->mosi_pin, 3);
@@ -268,9 +269,13 @@ int spi_init(uint8_t instance, spi_config_t *spi_config) {
     // Configure as master
     SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_MASTER);
 
-    // Configure SPI software-NSS
+    // Conffigure SPI software-NSS
     CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_SSOE);
-    CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_SSM);
+    SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_SSM);
+
+    // Maybe not needed
+    WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_FTHVL, 0x0);
+    SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_AFCNTR);
 
     // Enable the SPI
     SET_FIELD(SPIx_CR1[instance], SPIx_CR1_SPE);
@@ -289,7 +294,7 @@ int spi_device_init(spi_device_t device) {
 
     // Enable GPIO port clock
     tal_enable_clock(gpio_pin);
-    
+
     // Configure pin mode as output
     tal_set_mode(gpio_pin, 1);
 
@@ -327,40 +332,12 @@ int spi_transfer_sync(struct spi_sync_transfer_t *transfer) {
     bool read_inc = transfer->read_inc;
     asm("BKPT #0");
 
-    // If spi transaction isn't locked, exit w/ error.
-    // if (!spi_is_blocked(device)) {
-    //     return TI_ERRC_SPI_NOT_LOCKED;
-    // }
-
     // Perform blocking transfer
     for (int i = 0; i < size; i++) {
-        // Wait for TX buffer empty
-        // TODO: Figure out what fields here are wrong/not working. Right now while loop does not terminate (until timeout).
-        // while (!READ_FIELD(SPIx_SR[device.instance], SPIx_SR_TXP)) {
-        //     if (--timeout == 0) {
-        //         asm("BKPT #0");
-        //         // return 1;
-        //     //     ti_release_mutex(mutex[device.instance], mutex_timeouts[device.instance]);
-        //         return TI_ERRC_SPI_BLOCKING_TIMEOUT;
-        //     }
-        // }
-        // TODO: Make sure this writing is correct
+        while (!READ_FIELD(SPIx_SR[device.instance], SPIx_SR_TXP));
         *SPIx_TXDR[device.instance] = ((uint8_t *)source)[i];
-        asm("BKPT #0");
-        // Wait for RX buffer not empty
-        // TODO: Figure out what fields here are wrong/not working. Right now while loop does not terminate (until timeout).
-        while (!READ_FIELD(SPIx_SR[device.instance], SPIx_SR_RXP)) {
-            if (--timeout == 0) {
-            //     ti_release_mutex(mutex[device.instance], mutex_timeouts[device.instance]);
-                return TI_ERRC_SPI_BLOCKING_TIMEOUT;
-            // return ;
-            }
-        }
-        int index = 0;
-        if (read_inc)
-            index = i;
-        // TODO: is this call supposed to still be done when we are writing? It is outside if statement.
-        ((uint8_t *)dest)[index] = *SPIx_TXDR[device.instance];
+        SET_FIELD(SPIx_CR1[device.instance], SPIx_CR1_CSTART);
+        ((uint8_t *)dest)[i] = *SPIx_TXDR[device.instance];
     }
 
     return TI_ERRC_NONE;
