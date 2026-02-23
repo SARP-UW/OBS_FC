@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file modules/internal/include/internal/interrupt.h
+ * @file internal/interrupt.h
  * @authors Aaron McBride
  * @brief Reference information and prototypes for system interrupts.
  */

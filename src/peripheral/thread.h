@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file modules/kernel/include/kernel/thread.h
+ * @file peripheral/thread.h
  * @authors Aaron McBride
  * @brief Thread management and control facilities.
  */

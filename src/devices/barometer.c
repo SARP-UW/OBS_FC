@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * @file sensors/include/barometer.c
+ * @file devices/barometer.c
  * @authors Jude Merritt
  * @brief MS561101BA03 Barometer driver
  */

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * @file sensors/include/barometer.h
+ * @file peripheral/qspi.h
  * @authors Jude Merritt
  * @brief Quad SPI driver for S25FL064LABMFM010 flash memory chip
  */

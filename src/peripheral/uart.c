@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * @file common/platform/usart.h /// @todo UPDATE THIS
+ * @file peripheral/uart.c
  * @authors Charles Faisandier, Joanna Zhou, Jude Merritt
  * @brief USART Driver Implementation
  */

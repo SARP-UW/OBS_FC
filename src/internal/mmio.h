@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file modules/internal/include/internal/mmio.h
+ * @file internal/mmio.h
  * @authors Aaron McBride
  * @brief Resources and utilities for memory-mapped I/O.
  */
@@ -224,6 +224,48 @@ static UART_Regs UART_MAP[9] = {
   const __auto_type _field = (field); \
   (_value << _field.pos) & _field.msk; \
 })
+
+/**************************************************************************************************
+ * @section Actuator (MAX22216/MAX22217) Register Definitions
+ **************************************************************************************************/
+#define ACTUATOR_REG_GLOBAL_CTRL   0x00
+#define ACTUATOR_REG_GLOBAL_CFG    0x01
+#define ACTUATOR_REG_STATUS        0x02
+#define ACTUATOR_REG_STATUS_CFG    0x03
+#define ACTUATOR_REG_DC_H2L        0x04
+#define ACTUATOR_REG_VM_MONITOR    0x05
+#define ACTUATOR_REG_VM_THRESHOLD  0x06
+#define ACTUATOR_REG_F_AC          0x07
+#define ACTUATOR_REG_U_AC_SCAN     0x08
+
+#define ACTUATOR_REG_FAULT0        0x65
+#define ACTUATOR_REG_FAULT1        0x66
+
+#define ACTUATOR_GLOBAL_CTRL_F_PWM_M_POS 4
+#define ACTUATOR_GLOBAL_CTRL_F_PWM_M_MSK (0xFu << ACTUATOR_GLOBAL_CTRL_F_PWM_M_POS)
+#define ACTUATOR_GLOBAL_CTRL_CNTL_POS(ch) (ch)
+
+#define ACTUATOR_GLOBAL_CFG_ACTIVE_POS    15
+#define ACTUATOR_GLOBAL_CFG_MASKS_POS     8
+#define ACTUATOR_GLOBAL_CFG_CNTL_POL_POS  7
+#define ACTUATOR_GLOBAL_CFG_STAT_POL_POS  6
+#define ACTUATOR_GLOBAL_CFG_VDR_MODE_POS  4
+#define ACTUATOR_GLOBAL_CFG_CHS_POS       0
+
+#define ACTUATOR_CFG_CTRL0_CTRL_MODE_POS  14
+#define ACTUATOR_CFG_CTRL0_HHF_EN_POS     13
+#define ACTUATOR_CFG_CTRL0_OL_EN_POS      12
+#define ACTUATOR_CFG_CTRL0_H2L_EN_POS     11
+#define ACTUATOR_CFG_CTRL0_RDWE_POS       10
+#define ACTUATOR_CFG_CTRL0_RMDE_POS       9
+#define ACTUATOR_CFG_CTRL0_RUPE_POS       8
+
+#define ACTUATOR_CFG_CTRL1_HSNLS_POS      10
+#define ACTUATOR_CFG_CTRL1_F_PWM_POS      8
+#define ACTUATOR_CFG_CTRL1_T_BLANK_POS    6
+#define ACTUATOR_CFG_CTRL1_SLEW_POS       4
+#define ACTUATOR_CFG_CTRL1_GAIN_POS       2
+#define ACTUATOR_CFG_CTRL1_SNSF_POS       0
 
 /**************************************************************************************************
  * @section COMP1 Definitions
@@ -7858,14 +7900,19 @@ extern const field32_t G_TIMx_CNT_CNT_H;          /** @brief High counter value.
 extern const field32_t G_TIMx_PSC_PSC;            /** @brief Prescaler value. */
 extern const field32_t G_TIMx_ARR_ARR_H;          /** @brief High auto-reload value. */
 extern const field32_t G_TIMx_ARR_ARR_L;          /** @brief Low auto-reload value. */
+extern const field32_t G_TIMx_ARR_ARR_32B;
 extern const field32_t G_TIMx_CCR1_CCR1_H;        /** @brief High capture/compare 1 value. */
 extern const field32_t G_TIMx_CCR1_CCR1_L;        /** @brief Low capture/compare 1 value. */
+extern const field32_t G_TIMx_CCR1_CCR1_32B;
 extern const field32_t G_TIMx_CCR2_CCR2_H;        /** @brief High capture/compare 2 value. */
 extern const field32_t G_TIMx_CCR2_CCR2_L;        /** @brief Low capture/compare 2 value. */
+extern const field32_t G_TIMx_CCR2_CCR2_32B;
 extern const field32_t G_TIMx_CCR3_CCR3_H;        /** @brief High capture/compare value. */
 extern const field32_t G_TIMx_CCR3_CCR3_L;        /** @brief Low capture/compare value. */
+extern const field32_t G_TIMx_CCR3_CCR3_32B;
 extern const field32_t G_TIMx_CCR4_CCR4_H;        /** @brief High capture/compare value. */
 extern const field32_t G_TIMx_CCR4_CCR4_L;        /** @brief Low capture/compare value. */
+extern const field32_t G_TIMx_CCR4_CCR4_32B;
 extern const field32_t G_TIMx_DCR_DBL;            /** @brief DMA burst length. */
 extern const field32_t G_TIMx_DCR_DBA;            /** @brief DMA base address. */
 extern const field32_t G_TIMx_DMAR_DMAB;          /** @brief DMA register for burst accesses. */
@@ -7881,13 +7928,13 @@ extern const field32_t G_TIMx_EGR_CCxG[5];            /** @brief Capture/compare
 extern const field32_t G_TIMx_CCMR1_OUTPUT_CCxS[3];   /** @brief CC1S. */
 extern const field32_t G_TIMx_CCMR1_OUTPUT_OCxFE[3];  /** @brief OC1FE. */
 extern const field32_t G_TIMx_CCMR1_OUTPUT_OCxPE[3];  /** @brief OC1PE. */
-extern const field32_t G_TIMx_CCMR2_OUTPUT_OCxPE[5];  /** @brief OC1PE. */
 extern const field32_t G_TIMx_CCMR1_OUTPUT_OCxM[3];   /** @brief OC1M. */
-extern const field32_t G_TIMx_CCMR2_OUTPUT_OCxM[5];   /** @brief OC1M. */
 extern const field32_t G_TIMx_CCMR1_OUTPUT_OCxCE[3];  /** @brief OC1CE. */
 extern const field32_t G_TIMx_CCMR1_OUTPUT_OCxM_3[3]; /** @brief Output compare 1 mode - bit 3. */
 extern const field32_t G_TIMx_CCMR1_INPUT_ICxF[3];    /** @brief Input capture 1 filter. */
 extern const field32_t G_TIMx_CCMR2_INPUT_ICxPSC[5];  /** @brief Input capture 3 prescaler. */
+extern const field32_t G_TIMx_CCMR2_OUTPUT_OCxM[5];   
+extern const field32_t G_TIMx_CCMR2_OUTPUT_OCxPE[5]; 
 extern const field32_t G_TIMx_CCER_CCxNP[5];          /** @brief Capture/Compare 1 output polarity. */
 extern const field32_t G_TIMx_CCER_CCxP[5];           /** @brief Capture/Compare 1 output polarity. */
 extern const field32_t G_TIMx_CCER_CCxE[5];           /** @brief Capture/Compare 1 output enable. */
@@ -8355,3 +8402,278 @@ extern rw_reg32_t const ART_CTR; /** @brief Control register. */
 
 extern const field32_t ART_CTR_EN;         /** @brief Cache enable. */
 extern const field32_t ART_CTR_PCACHEADDR; /** @brief Cacheable page index. */
+
+/**************************************************************************************************
+ * @section Si4468 Radio Definitions
+ **************************************************************************************************/
+
+/** @subsection Si4468 Command Opcodes */
+
+#define SI446X_CMD_POWER_UP          0x02
+#define SI446X_CMD_GET_INT_STATUS    0x20
+#define SI446X_CMD_GPIO_PIN_CFG      0x13
+#define SI446X_CMD_SET_PROPERTY      0x11
+#define SI446X_CMD_FIFO_INFO         0x15
+#define SI446X_CMD_PACKET_INFO       0x16
+#define SI446X_CMD_START_TX          0x31
+#define SI446X_CMD_START_RX          0x32
+#define SI446X_CMD_CHANGE_STATE      0x34
+#define SI446X_CMD_READ_CMD_BUFFER   0x44
+#define SI446X_CMD_READ_FRR_A        0x50
+#define SI446X_CMD_READ_FRR_B        0x51
+#define SI446X_CMD_READ_FRR_C        0x52
+#define SI446X_CMD_READ_FRR_D        0x53
+#define SI446X_CMD_WRITE_TX_FIFO     0x66
+#define SI446X_CMD_READ_RX_FIFO      0x77
+
+/** @subsection Si4468 Misc Constants */
+
+#define SI446X_CTS_READY_VALUE       0xFF
+#define SI446X_CMD_BUFFER_SIZE       16U
+#define SI446X_FIFO_SIZE_BYTES       64U
+#define SI446X_MAX_PACKET_SIZE       64U
+
+/** @subsection Si4468 State IDs */
+
+#define SI446X_STATE_SLEEP           0x01
+#define SI446X_STATE_READY           0x03
+
+/** @subsection Si4468 Property Group IDs */
+
+#define SI446X_PROP_GROUP_GLOBAL     0x00
+#define SI446X_PROP_GROUP_INT_CTL    0x01
+#define SI446X_PROP_GROUP_FRR_CTL    0x02
+#define SI446X_PROP_GROUP_PREAMBLE   0x10
+#define SI446X_PROP_GROUP_SYNC       0x11
+#define SI446X_PROP_GROUP_PKT        0x12
+#define SI446X_PROP_GROUP_MODEM      0x20
+#define SI446X_PROP_GROUP_CHFLT      0x21
+#define SI446X_PROP_GROUP_PA         0x22
+#define SI446X_PROP_GROUP_SYNTH      0x23
+
+/** @subsection Si4468 Global Properties */
+
+#define SI446X_PROP_GLOBAL_XO_TUNE   0x0000
+#define SI446X_PROP_GLOBAL_CLK_CFG   0x0001
+#define SI446X_PROP_GLOBAL_CONFIG    0x0003
+
+/** @subsection Si4468 Interrupt Control Properties */
+
+#define SI446X_PROP_INT_CTL_ENABLE   0x0100
+#define SI446X_PROP_INT_CTL_PH_ENABLE 0x0101
+#define SI446X_PROP_INT_CTL_MODEM_ENABLE 0x0102
+#define SI446X_PROP_INT_CTL_CHIP_ENABLE 0x0103
+
+/** @subsection Si4468 FRR Control Properties */
+
+#define SI446X_PROP_FRR_CTL_A_MODE   0x0200
+#define SI446X_PROP_FRR_CTL_B_MODE   0x0201
+#define SI446X_PROP_FRR_CTL_C_MODE   0x0202
+#define SI446X_PROP_FRR_CTL_D_MODE   0x0203
+
+/** @subsection Si4468 Preamble Properties */
+
+#define SI446X_PROP_PREAMBLE_TX_LENGTH      0x1000
+#define SI446X_PROP_PREAMBLE_CONFIG_STD_1   0x1001
+#define SI446X_PROP_PREAMBLE_CONFIG_NSTD    0x1002
+#define SI446X_PROP_PREAMBLE_CONFIG_STD_2   0x1003
+#define SI446X_PROP_PREAMBLE_CONFIG         0x1004
+#define SI446X_PROP_PREAMBLE_PATTERN_31_24  0x1005
+#define SI446X_PROP_PREAMBLE_PATTERN_23_16  0x1006
+#define SI446X_PROP_PREAMBLE_PATTERN_15_8   0x1007
+#define SI446X_PROP_PREAMBLE_PATTERN_7_0    0x1008
+
+/** @subsection Si4468 Sync Properties */
+
+#define SI446X_PROP_SYNC_CONFIG       0x1100
+#define SI446X_PROP_SYNC_BITS_31_24   0x1101
+#define SI446X_PROP_SYNC_BITS_23_16   0x1102
+#define SI446X_PROP_SYNC_BITS_15_8    0x1103
+#define SI446X_PROP_SYNC_BITS_7_0     0x1104
+#define SI446X_PROP_SYNC_CONFIG2      0x1105
+#define SI446X_PROP_SYNC_BITS2_31_24  0x1106
+#define SI446X_PROP_SYNC_BITS2_23_16  0x1107
+#define SI446X_PROP_SYNC_BITS2_15_8   0x1108
+#define SI446X_PROP_SYNC_BITS2_7_0    0x1109
+
+/** @subsection Si4468 Packet Handler Properties */
+
+#define SI446X_PROP_PKT_CRC_CONFIG        0x1200
+#define SI446X_PROP_PKT_WHT_POLY_15_8     0x1201
+#define SI446X_PROP_PKT_WHT_POLY_7_0      0x1202
+#define SI446X_PROP_PKT_WHT_SEED_15_8     0x1203
+#define SI446X_PROP_PKT_WHT_SEED_7_0      0x1204
+#define SI446X_PROP_PKT_WHT_BIT_NUM       0x1205
+#define SI446X_PROP_PKT_CONFIG1           0x1206
+#define SI446X_PROP_PKT_CONFIG2           0x1207
+#define SI446X_PROP_PKT_LEN               0x1208
+#define SI446X_PROP_PKT_LEN_FIELD_SOURCE  0x1209
+#define SI446X_PROP_PKT_LEN_ADJUST        0x120A
+#define SI446X_PROP_PKT_TX_THRESHOLD      0x120B
+#define SI446X_PROP_PKT_RX_THRESHOLD      0x120C
+#define SI446X_PROP_PKT_FIELD_1_LENGTH_12_8 0x120D
+#define SI446X_PROP_PKT_FIELD_1_LENGTH_7_0  0x120E
+#define SI446X_PROP_PKT_FIELD_1_CONFIG      0x120F
+#define SI446X_PROP_PKT_FIELD_1_CRC_CONFIG  0x1210
+#define SI446X_PROP_PKT_FIELD_2_LENGTH_12_8 0x1211
+#define SI446X_PROP_PKT_FIELD_2_LENGTH_7_0  0x1212
+#define SI446X_PROP_PKT_FIELD_2_CONFIG      0x1213
+#define SI446X_PROP_PKT_FIELD_2_CRC_CONFIG  0x1214
+#define SI446X_PROP_PKT_FIELD_3_LENGTH_12_8 0x1215
+#define SI446X_PROP_PKT_FIELD_3_LENGTH_7_0  0x1216
+#define SI446X_PROP_PKT_FIELD_3_CONFIG      0x1217
+#define SI446X_PROP_PKT_FIELD_3_CRC_CONFIG  0x1218
+#define SI446X_PROP_PKT_FIELD_4_LENGTH_12_8 0x1219
+#define SI446X_PROP_PKT_FIELD_4_LENGTH_7_0  0x121A
+#define SI446X_PROP_PKT_FIELD_4_CONFIG      0x121B
+#define SI446X_PROP_PKT_FIELD_4_CRC_CONFIG  0x121C
+#define SI446X_PROP_PKT_FIELD_5_LENGTH_12_8 0x121D
+#define SI446X_PROP_PKT_FIELD_5_LENGTH_7_0  0x121E
+#define SI446X_PROP_PKT_FIELD_5_CONFIG      0x121F
+#define SI446X_PROP_PKT_FIELD_5_CRC_CONFIG  0x1220
+#define SI446X_PROP_PKT_RX_FIELD_1_LENGTH_12_8 0x1221
+#define SI446X_PROP_PKT_RX_FIELD_1_LENGTH_7_0  0x1222
+#define SI446X_PROP_PKT_RX_FIELD_1_CONFIG      0x1223
+#define SI446X_PROP_PKT_RX_FIELD_1_CRC_CONFIG  0x1224
+#define SI446X_PROP_PKT_RX_FIELD_2_LENGTH_12_8 0x1225
+#define SI446X_PROP_PKT_RX_FIELD_2_LENGTH_7_0  0x1226
+#define SI446X_PROP_PKT_RX_FIELD_2_CONFIG      0x1227
+#define SI446X_PROP_PKT_RX_FIELD_2_CRC_CONFIG  0x1228
+#define SI446X_PROP_PKT_RX_FIELD_3_LENGTH_12_8 0x1229
+#define SI446X_PROP_PKT_RX_FIELD_3_LENGTH_7_0  0x122A
+#define SI446X_PROP_PKT_RX_FIELD_3_CONFIG      0x122B
+#define SI446X_PROP_PKT_RX_FIELD_3_CRC_CONFIG  0x122C
+#define SI446X_PROP_PKT_RX_FIELD_4_LENGTH_12_8 0x122D
+#define SI446X_PROP_PKT_RX_FIELD_4_LENGTH_7_0  0x122E
+#define SI446X_PROP_PKT_RX_FIELD_4_CONFIG      0x122F
+#define SI446X_PROP_PKT_RX_FIELD_4_CRC_CONFIG  0x1230
+#define SI446X_PROP_PKT_RX_FIELD_5_LENGTH_12_8 0x1231
+#define SI446X_PROP_PKT_RX_FIELD_5_LENGTH_7_0  0x1232
+#define SI446X_PROP_PKT_RX_FIELD_5_CONFIG      0x1233
+#define SI446X_PROP_PKT_RX_FIELD_5_CRC_CONFIG  0x1234
+#define SI446X_PROP_PKT_CRC_SEED_31_24          0x1236
+#define SI446X_PROP_PKT_CRC_SEED_23_16          0x1237
+#define SI446X_PROP_PKT_CRC_SEED_15_8           0x1238
+#define SI446X_PROP_PKT_CRC_SEED_7_0            0x1239
+
+/** @subsection Si4468 Modem Properties */
+
+#define SI446X_PROP_MODEM_MOD_TYPE       0x2000
+#define SI446X_PROP_MODEM_MAP_CONTROL    0x2001
+#define SI446X_PROP_MODEM_DSM_CTRL       0x2002
+#define SI446X_PROP_MODEM_DATA_RATE_2    0x2003
+#define SI446X_PROP_MODEM_DATA_RATE_1    0x2004
+#define SI446X_PROP_MODEM_DATA_RATE_0    0x2005
+#define SI446X_PROP_MODEM_TX_NCO_MODE_3  0x2006
+#define SI446X_PROP_MODEM_TX_NCO_MODE_2  0x2007
+#define SI446X_PROP_MODEM_TX_NCO_MODE_1  0x2008
+#define SI446X_PROP_MODEM_TX_NCO_MODE_0  0x2009
+#define SI446X_PROP_MODEM_FREQ_DEV_2     0x200A
+#define SI446X_PROP_MODEM_FREQ_DEV_1     0x200B
+#define SI446X_PROP_MODEM_FREQ_DEV_0     0x200C
+#define SI446X_PROP_MODEM_TX_RAMP_DELAY  0x2018
+#define SI446X_PROP_MODEM_MDM_CTRL       0x2019
+#define SI446X_PROP_MODEM_IF_CONTROL     0x201A
+#define SI446X_PROP_MODEM_IF_FREQ_2      0x201B
+#define SI446X_PROP_MODEM_IF_FREQ_1      0x201C
+#define SI446X_PROP_MODEM_IF_FREQ_0      0x201D
+#define SI446X_PROP_MODEM_DECIMATION_CFG1 0x201E
+#define SI446X_PROP_MODEM_DECIMATION_CFG0 0x201F
+#define SI446X_PROP_MODEM_DECIMATION_CFG2 0x2020
+#define SI446X_PROP_MODEM_IFPKD_THRESHOLDS 0x2021
+#define SI446X_PROP_MODEM_BCR_OSR_1      0x2022
+#define SI446X_PROP_MODEM_BCR_OSR_0      0x2023
+#define SI446X_PROP_MODEM_BCR_NCO_OFFSET_2 0x2024
+#define SI446X_PROP_MODEM_BCR_NCO_OFFSET_1 0x2025
+#define SI446X_PROP_MODEM_BCR_NCO_OFFSET_0 0x2026
+#define SI446X_PROP_MODEM_BCR_GAIN_1     0x2027
+#define SI446X_PROP_MODEM_BCR_GAIN_0     0x2028
+#define SI446X_PROP_MODEM_BCR_GEAR       0x2029
+#define SI446X_PROP_MODEM_BCR_MISC1      0x202A
+#define SI446X_PROP_MODEM_BCR_MISC0      0x202B
+#define SI446X_PROP_MODEM_AFC_GEAR       0x202C
+#define SI446X_PROP_MODEM_AFC_WAIT       0x202D
+#define SI446X_PROP_MODEM_AFC_GAIN_1     0x202E
+#define SI446X_PROP_MODEM_AFC_GAIN_0     0x202F
+#define SI446X_PROP_MODEM_AFC_LIMITER_1  0x2030
+#define SI446X_PROP_MODEM_AFC_LIMITER_0  0x2031
+#define SI446X_PROP_MODEM_AFC_MISC       0x2032
+#define SI446X_PROP_MODEM_AGC_CONTROL    0x2035
+#define SI446X_PROP_MODEM_AGC_WINDOW_SIZE 0x2038
+#define SI446X_PROP_MODEM_AGC_RFPD_DECAY 0x2039
+#define SI446X_PROP_MODEM_AGC_IFPD_DECAY 0x203A
+#define SI446X_PROP_MODEM_FSK4_GAIN1     0x203B
+#define SI446X_PROP_MODEM_FSK4_GAIN0     0x203C
+#define SI446X_PROP_MODEM_FSK4_TH1       0x203D
+#define SI446X_PROP_MODEM_FSK4_TH0       0x203E
+#define SI446X_PROP_MODEM_FSK4_MAP       0x203F
+#define SI446X_PROP_MODEM_OOK_PDTC       0x2040
+#define SI446X_PROP_MODEM_OOK_BLOPK      0x2041
+#define SI446X_PROP_MODEM_OOK_CNT1       0x2042
+#define SI446X_PROP_MODEM_OOK_MISC       0x2043
+#define SI446X_PROP_MODEM_RAW_CONTROL    0x2045
+#define SI446X_PROP_MODEM_RAW_EYE_1      0x2046
+#define SI446X_PROP_MODEM_RAW_EYE_0      0x2047
+#define SI446X_PROP_MODEM_ANT_DIV_MODE   0x2048
+#define SI446X_PROP_MODEM_ANT_DIV_CONTROL 0x2049
+#define SI446X_PROP_MODEM_RSSI_THRESH    0x204A
+#define SI446X_PROP_MODEM_RSSI_JUMP_THRESH 0x204B
+#define SI446X_PROP_MODEM_RSSI_CONTROL   0x204C
+#define SI446X_PROP_MODEM_RSSI_CONTROL2  0x204D
+#define SI446X_PROP_MODEM_RSSI_COMP      0x204E
+#define SI446X_PROP_MODEM_RAW_SEARCH2    0x2050
+#define SI446X_PROP_MODEM_CLKGEN_BAND    0x2051
+#define SI446X_PROP_MODEM_SPIKE_DET      0x2054
+#define SI446X_PROP_MODEM_ONE_SHOT_AFC   0x2055
+#define SI446X_PROP_MODEM_RSSI_MUTE      0x2057
+#define SI446X_PROP_MODEM_DSA_CTRL1      0x205B
+#define SI446X_PROP_MODEM_DSA_CTRL2      0x205C
+#define SI446X_PROP_MODEM_DSA_QUAL       0x205D
+#define SI446X_PROP_MODEM_DSA_RSSI       0x205E
+#define SI446X_PROP_MODEM_DSA_MISC       0x205F
+
+/** @subsection Si4468 Channel Filter Properties */
+
+#define SI446X_PROP_CHFLT_RX1_COE13      0x2100
+#define SI446X_PROP_CHFLT_RX1_COE12      0x2101
+#define SI446X_PROP_CHFLT_RX1_COE11      0x2102
+#define SI446X_PROP_CHFLT_RX1_COE10      0x2103
+#define SI446X_PROP_CHFLT_RX1_COE9       0x2104
+#define SI446X_PROP_CHFLT_RX1_COE8       0x2105
+#define SI446X_PROP_CHFLT_RX1_COE7       0x2106
+#define SI446X_PROP_CHFLT_RX1_COE6       0x2107
+#define SI446X_PROP_CHFLT_RX1_COE5       0x2108
+#define SI446X_PROP_CHFLT_RX1_COE4       0x2109
+#define SI446X_PROP_CHFLT_RX1_COE3       0x210A
+#define SI446X_PROP_CHFLT_RX1_COE2       0x210B
+#define SI446X_PROP_CHFLT_RX1_COE1       0x210C
+#define SI446X_PROP_CHFLT_RX1_COE0       0x210D
+#define SI446X_PROP_CHFLT_RX1_COEM0      0x210E
+#define SI446X_PROP_CHFLT_RX1_COEM1      0x210F
+#define SI446X_PROP_CHFLT_RX1_COEM2      0x2110
+#define SI446X_PROP_CHFLT_RX1_COEM3      0x2111
+#define SI446X_PROP_CHFLT_RX2_COE13      0x2112
+#define SI446X_PROP_CHFLT_RX2_COE12      0x2113
+#define SI446X_PROP_CHFLT_RX2_COE11      0x2114
+#define SI446X_PROP_CHFLT_RX2_COE10      0x2115
+#define SI446X_PROP_CHFLT_RX2_COE9       0x2116
+#define SI446X_PROP_CHFLT_RX2_COE8       0x2117
+#define SI446X_PROP_CHFLT_RX2_COE7       0x2118
+#define SI446X_PROP_CHFLT_RX2_COE6       0x2119
+#define SI446X_PROP_CHFLT_RX2_COE5       0x211A
+#define SI446X_PROP_CHFLT_RX2_COE4       0x211B
+#define SI446X_PROP_CHFLT_RX2_COE3       0x211C
+#define SI446X_PROP_CHFLT_RX2_COE2       0x211D
+#define SI446X_PROP_CHFLT_RX2_COE1       0x211E
+#define SI446X_PROP_CHFLT_RX2_COE0       0x211F
+#define SI446X_PROP_CHFLT_RX2_COEM0      0x2120
+#define SI446X_PROP_CHFLT_RX2_COEM1      0x2121
+#define SI446X_PROP_CHFLT_RX2_COEM2      0x2122
+#define SI446X_PROP_CHFLT_RX2_COEM3      0x2123
+
+/** @subsection Si4468 PA Properties */
+
+#define SI446X_PROP_PA_MODE             0x2200
+#define SI446X_PROP_PA_PWR_LVL          0x2201
+#define SI446X_PROP_PA_BIAS_CLKDUTY     0x2202
+#define SI446X_PROP_PA_TC               0x2203

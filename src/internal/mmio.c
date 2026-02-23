@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file modules/internal/src/mmio.c
+ * @file internal/mmio.c
  * @authors Aaron McBride
  * @brief Implementation of resources for memory-mapped I/O.
  */

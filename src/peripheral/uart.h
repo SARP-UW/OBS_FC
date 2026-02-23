@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * @file src/platform/usart.h
+ * @file peripheral/uart.h
  * @authors Joanna Zhou, Charles Faisandier, Jude Merritt
  * @brief UART Driver Interface. Doesn't support synchronous mode.
  */

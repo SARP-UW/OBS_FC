@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file modules/mcu/src/spi.c
+ * @file peripheral/spi.c
  * @authors Charles Faisandier, Jude Merritt
  * @brief Implementation of SPI driver interface
  */

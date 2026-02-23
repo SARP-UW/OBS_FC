@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * @file common/platform/watchdog.h
+ * @file peripheral/watchdog.h
  * @authors Joshua Beard
  * @brief Driver for the watchdog timer
  */

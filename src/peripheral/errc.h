@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file modules/util/include/util/errc.h
+ * @file peripheral/errc.h
  * @authors Aaron McBride
  * @brief Error code definitions and utility functions.
  */
