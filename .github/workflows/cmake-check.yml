@@ -1,0 +1,23 @@
+name: Check CMake Configure
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  cmake-configure:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run cmake .. in src/build
+        shell: bash
+        run: |
+          cd src/build
+          cmake ..
