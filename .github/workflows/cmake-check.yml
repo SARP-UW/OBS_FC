@@ -19,5 +19,6 @@ jobs:
       - name: Run cmake .. in src/build
         shell: bash
         run: |
+          mkdir src/build/
           cd src/build
           cmake ..
