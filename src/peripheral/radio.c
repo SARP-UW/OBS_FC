@@ -17,6 +17,7 @@
  * @file peripheral/radio.c
  * @authors Mahir Emran
  * @brief Driver implementation for the Silicon Labs Si4468 radio.
+ * @note Untested driver.
  */
 
 #include "peripheral/radio.h"

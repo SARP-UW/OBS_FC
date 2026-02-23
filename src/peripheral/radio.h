@@ -17,6 +17,7 @@
  * @file peripheral/radio.h
  * @authors Mahir Emran
  * @brief Driver interface for the Silicon Labs Si4468 radio.
+ * @note Untested driver.
  */
 #pragma once
 

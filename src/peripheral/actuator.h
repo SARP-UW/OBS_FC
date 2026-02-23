@@ -17,6 +17,7 @@
  * @file peripheral/actuator.h
  * @authors Mahir Emran, Shlok Rathi
  * @brief Actuator driver interface for MAX22216/MAX22217 solenoid controller.
+ * @note Untested driver.
  */
 #pragma once
 

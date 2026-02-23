@@ -17,6 +17,7 @@
  * @file peripheral/actuator.c
  * @authors Mahir Emran, Shlok Rathi
  * @brief Actuator driver implementation for MAX22216/MAX22217 solenoid controller.
+ * @note Untested driver.
  */
 
 #include "peripheral/actuator.h"
@@ -63,6 +64,7 @@
  * @file peripheral/actuator.c
  * @authors Mahir Emran, Shlok Rathi
  * @brief Actuator driver implementation for MAX22216/MAX22217 solenoid controller.
+ * @note Untested driver.
  */
 
 #include "peripheral/actuator.h"
