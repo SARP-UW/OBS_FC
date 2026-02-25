@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file modules/mcu/include/mcu/spi.h
+ * @file peripheral/spi.h
  * @authors Charles Faisandier
  * @brief Interface for the SPI driver
  */

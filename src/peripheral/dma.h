@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file src/app/dma.h
+ * @file internal/dma.h
  * @authors Charles Faisandier
  * @brief DMA Public Interface.
  */

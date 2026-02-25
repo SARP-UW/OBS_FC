@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
- * @file include/tal/error.h
+ * @file util/error.h
  * @authors Joshua Beard & Aaron McBride & Charles Faisandier
  * @brief Error handling utilities public interface.
  */
