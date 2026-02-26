@@ -51,6 +51,5 @@
   - Todo  
 - Temperature Sensor  
   - Todo
-
 - GNSS  
-- Todo
+  - Todo
