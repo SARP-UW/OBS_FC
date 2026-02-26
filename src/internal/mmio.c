@@ -4248,6 +4248,9 @@ const field32_t RCC_C1_APB1HENR_MDIOSEN            = {.msk = 0x00000020U, .pos =
 const field32_t RCC_C1_APB1HENR_FDCANEN            = {.msk = 0x00000100U, .pos = 8};
 const field32_t RCC_C1_APB2ENR_DFSDM1EN            = {.msk = 0x10000000U, .pos = 28};
 const field32_t RCC_C1_APB2ENR_HRTIMEN             = {.msk = 0x20000000U, .pos = 29};
+const field32_t RCC_APB2ENR_SPI1EN                 = {.msk = 0x00001000U, .pos = 12};
+const field32_t RCC_APB2ENR_SPI4EN                 = {.msk = 0x00002000U, .pos = 13};
+const field32_t RCC_APB2ENR_SPI5EN                 = {.msk = 0x00100000U, .pos = 20};
 const field32_t RCC_APB2ENR_DFSDM1EN               = {.msk = 0x10000000U, .pos = 28};
 const field32_t RCC_APB2ENR_HRTIMEN                = {.msk = 0x20000000U, .pos = 29};
 const field32_t RCC_APB4ENR_SYSCFGEN               = {.msk = 0x00000002U, .pos = 1};

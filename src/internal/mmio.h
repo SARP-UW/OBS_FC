@@ -2683,6 +2683,9 @@ extern const field32_t RCC_AHB4ENR_GPIOJEN;                /** @brief 0GPIO peri
 extern const field32_t RCC_AHB4ENR_GPIOKEN;                /** @brief 0GPIO peripheral clock enable. */
 extern const field32_t RCC_AHB4ENR_CRCEN;                  /** @brief CRC peripheral clock enable. */
 extern const field32_t RCC_AHB4ENR_BDMAEN;                 /** @brief BDMA and DMAMUX2 clock enable. */
+extern const field32_t RCC_APB2ENR_SPI1EN;                 /** @brief SPI1 peripheral clocks enable. */
+extern const field32_t RCC_APB2ENR_SPI4EN;                 /** @brief SPI4 peripheral clocks enable. */
+extern const field32_t RCC_APB2ENR_SPI5EN;                 /** @brief SPI5 peripheral clocks enable. */
 extern const field32_t RCC_AHB4ENR_ADC3EN;                 /** @brief ADC3 peripheral clocks enable. */
 extern const field32_t RCC_AHB4ENR_HSEMEN;                 /** @brief HSEM peripheral clock enable. */
 extern const field32_t RCC_AHB4ENR_BKPRAMEN;               /** @brief Backup RAM clock enable. */
