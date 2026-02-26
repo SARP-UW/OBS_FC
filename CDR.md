@@ -53,3 +53,11 @@
   - Todo
 - GNSS  
   - Todo
+
+  **Testing Code**
+  - [test_alloc.c](https://github.com/SARP-UW/titan/blob/main/test/test_alloc.c) - Unit tests
+  - [test_oscilloscope.c](https://github.com/SARP-UW/titan/blob/main/test/test_oscilloscope.c)
+  - [test_pwm.c](https://github.com/SARP-UW/titan/blob/main/test/test_pwm.c)
+  - [test_spi.c](https://github.com/SARP-UW/titan/blob/main/test/test_spi.c)
+  - [test_usart.c](https://github.com/SARP-UW/titan/blob/main/test/test_usart.c)
+

@@ -43,11 +43,9 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 project(titan C ASM)
 
-set(EXECUTABLE ${PROJECT_NAME}.elf)
 enable_testing()
 
-add_executable(${EXECUTABLE} 
-  ${CMAKE_SOURCE_DIR}/main.c
+set(COMMON_SOURCES
   ${CMAKE_SOURCE_DIR}/internal/startup.c
   ${CMAKE_SOURCE_DIR}/internal/interrupt.c
   ${CMAKE_SOURCE_DIR}/internal/vtable.c
@@ -57,49 +55,54 @@ add_executable(${EXECUTABLE}
   ${CMAKE_SOURCE_DIR}/peripheral/pwm.c
   ${CMAKE_SOURCE_DIR}/internal/alloc.c
   ${CMAKE_SOURCE_DIR}/peripheral/uart.c
-  ${CMAKE_SOURCE_DIR}/internal/dma.c
+  ${CMAKE_SOURCE_DIR}/peripheral/dma.c
   ${CMAKE_SOURCE_DIR}/peripheral/spi.c
   ${CMAKE_SOURCE_DIR}/peripheral/actuator.c
   ${CMAKE_SOURCE_DIR}/peripheral/radio.c
- 
 )
 
-# add_executable(test_allocator.elf
-#   ${CMAKE_TEST_DIR}/test_alloc.c
-#   ${CMAKE_SOURCE_DIR}/internal/alloc.c
-# )
+function(add_firmware_target target_name entry_file)
+  add_executable(${target_name}.elf
+    ${entry_file}
+    ${COMMON_SOURCES}
+  )
 
-# add_test(NAME TEST_ALLOC COMMAND test_allocator.elf)
+  target_include_directories(${target_name}.elf PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/..
+  )
 
+  target_compile_options(${target_name}.elf PRIVATE
+    -mcpu=cortex-m7
+    -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
+    -fdata-sections
+    -ffreestanding
+    -T devboard.ld
+    # -O2
+    -g3
+  )
 
-target_include_directories(${EXECUTABLE} PRIVATE
-  ${CMAKE_SOURCE_DIR}
-)
+  target_link_options(${target_name}.elf PRIVATE
+    -nostdlib
+    -T ${CMAKE_SOURCE_DIR}/internal/linker.ld
+    # -mtext-section-literals # added for linker issues
+    -mcpu=cortex-m7
+    -mthumb
+    -mfpu=fpv4-sp-d16
+    -mfloat-abi=hard
+    -specs=nano.specs
+    -lnosys
+    -Wl,-Map=${target_name}.map,--cref
+    -Wl,--gc-sections
+    -Xlinker
+    -print-memory-usage
+  )
+endfunction()
 
-target_compile_options(${EXECUTABLE} PRIVATE
-  -mcpu=cortex-m7
-  -mthumb
-  -mfpu=fpv4-sp-d16
-  -mfloat-abi=hard
-  -fdata-sections
-  -ffreestanding
-  -T devboard.ld
-  # -O2
-  -g3
-)
-
-target_link_options(${EXECUTABLE} PRIVATE
-  -nostdlib
-  -T ${CMAKE_SOURCE_DIR}/internal/linker.ld
-  # -mtext-section-literals # added for linker issues
-  -mcpu=cortex-m7
-  -mthumb
-  -mfpu=fpv4-sp-d16
-  -mfloat-abi=hard
-  -specs=nano.specs
-  -lnosys
-  -Wl,-Map=${PROJECT_NAME}.map,--cref
-  -Wl,--gc-sections
-  -Xlinker
-  -print-memory-usage
-)
+add_firmware_target(titan ${CMAKE_SOURCE_DIR}/main.c)
+add_firmware_target(test_pwm ${CMAKE_SOURCE_DIR}/../test/test_pwm.c)
+add_firmware_target(test_spi ${CMAKE_SOURCE_DIR}/../test/test_spi.c)
+add_firmware_target(test_usart ${CMAKE_SOURCE_DIR}/../test/test_usart.c)
+add_firmware_target(test_oscilloscope ${CMAKE_SOURCE_DIR}/../test/test_oscilloscope.c)

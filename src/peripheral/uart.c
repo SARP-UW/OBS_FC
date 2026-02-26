@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include <internal/mmio.h>
 
 #define CR_REG_COUNT 3
 #define NUM_REQUESTS_PER_UART 2

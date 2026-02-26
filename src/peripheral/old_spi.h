@@ -21,7 +21,7 @@
 
  #pragma once
 //  #include "util/errc.h"
- #include "internal/dma.h"
+ #include "dma.h"
 
 /**************************************************************************************************
  * @section Macros

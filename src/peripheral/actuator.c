@@ -141,30 +141,10 @@ static enum ti_errc_t actuator_spi_transfer(actuator_t *dev, uint8_t addr,
   tx[1] = (uint8_t)(data_in >> 8);
   tx[2] = (uint8_t)(data_in & 0xFF);
 
-  if (dev->spi_device.gpio_pin != 0) {
-    // Assert manual chip-select if configured.
-    tal_set_pin(dev->spi_device.gpio_pin, 0);
-  }
-
-  struct spi_sync_transfer_t transfer = {
-      .device = dev->spi_device,
-      .source = tx,
-      .dest = rx,
-      .size = sizeof(tx),
-      .timeout = 1000000,
-      .read_inc = true,
-  };
-
   // Execute synchronous transfer.
-  enum ti_errc_t errc = spi_transfer_sync(&transfer);
-
-  if (dev->spi_device.gpio_pin != 0) {
-    // Deassert chip-select.
-    tal_set_pin(dev->spi_device.gpio_pin, 1);
-  }
-
-  if (errc != TI_ERRC_NONE) {
-    return errc;
+  int result = spi_transfer_sync(dev->spi_instance, tx, rx, sizeof(tx));
+  if (result != 1) {
+    return TI_ERRC_UNKNOWN;
   }
 
   // Status is returned in the first byte; data in the remaining bytes.
@@ -199,17 +179,20 @@ enum ti_errc_t actuator_init(actuator_t *dev, const actuator_config_t *config) {
     return TI_ERRC_INVALID_ARG;
   }
 
-  enum ti_errc_t errc = spi_init(config->spi_device.instance,
-                                 (spi_config_t *)&config->spi_config);
-  if (errc != TI_ERRC_NONE)
-    return errc;
+  if (spi_init(config->spi_instance) != 1)
+    return TI_ERRC_INVALID_ARG;
 
-  errc = spi_device_init(config->spi_device);
-  if (errc != TI_ERRC_NONE)
-    return errc;
+  if (config->has_pwm_config) {
+    enum ti_errc_t pwm_errc = TI_ERRC_NONE;
+    ti_set_pwm(config->pwm_config, &pwm_errc);
+    if (pwm_errc != TI_ERRC_NONE)
+      return pwm_errc;
+  }
 
   // Store configuration locally.
-  dev->spi_device = config->spi_device;
+  dev->spi_instance = config->spi_instance;
+  dev->pwm_config = config->pwm_config;
+  dev->has_pwm_config = config->has_pwm_config;
   dev->enable_pin = config->enable_pin;
   dev->fault_pin = config->fault_pin;
   dev->stat0_pin = config->stat0_pin;

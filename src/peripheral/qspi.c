@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include "include/mmio.h"
-#include "include/errc.h"
-#include "myWork/qspi.h"
+#include "../internal/mmio.h"
+#include "errc.h"
+#include "qspi.h"
 
 // Single-chip quadspi driver using flash 1 pins.
 // This driver uses blocking. This may be problematic, as some

@@ -24,7 +24,7 @@
 #include <stdint.h>
 // #include "mutex.h"
 #include "errc.h"
-#include "internal/dma.h"
+#include "dma.h"
 
 #define DATA_REG_SIZE 32
 #define MAX_DEVICES_PER_INSTANCE 5
