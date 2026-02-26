@@ -41,16 +41,16 @@
   - [barometer.h](https://github.com/SARP-UW/titan/blob/main/src/devices/barometer.h)  
   - [barometer.c](https://github.com/SARP-UW/titan/blob/main/src/devices/barometer.c)  
 - Magnetometer  
-- Todo  
+  - Todo  
 - IMU  
-- Todo  
+  - Todo  
 - Actuator  
   - [actuator.h](https://github.com/SARP-UW/titan/blob/main/src/peripheral/actuator.h)  
   - [actuator.c](https://github.com/SARP-UW/titan/blob/main/src/peripheral/actuator.c)  
 - Radio  
-- Todo  
+  - Todo  
 - Temperature Sensor  
-- Todo
+  - Todo
 
 - GNSS  
 - Todo
