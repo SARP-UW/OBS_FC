@@ -8,7 +8,6 @@ This file serves to provide links for code files for those attending the CDR to 
 - Allocator  
   - [alloc.h](https://github.com/SARP-UW/titan/blob/main/src/internal/alloc.h)  
   - [alloc.c](https://github.com/SARP-UW/titan/blob/main/src/internal/alloc.c)
-  - [allocator unit test](https://github.com/SARP-UW/titan/blob/main/test/test_alloc.c)  
 - State Machine  
   - [state machine folder](https://github.com/SARP-UW/titan/tree/main/src/app)  
 - Main Loop  
@@ -56,7 +55,7 @@ This file serves to provide links for code files for those attending the CDR to 
   - Todo
 
  ### Testing Code
-  - [test_alloc.c](https://github.com/SARP-UW/titan/blob/main/test/test_alloc.c) - Unit tests
+  - [test_alloc.c](https://github.com/SARP-UW/titan/blob/main/test/test_alloc.c)
   - [test_oscilloscope.c](https://github.com/SARP-UW/titan/blob/main/test/test_oscilloscope.c)
   - [test_pwm.c](https://github.com/SARP-UW/titan/blob/main/test/test_pwm.c)
   - [test_spi.c](https://github.com/SARP-UW/titan/blob/main/test/test_spi.c)

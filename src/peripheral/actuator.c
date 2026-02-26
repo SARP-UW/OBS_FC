@@ -45,53 +45,6 @@
 #define ACTUATOR_IMONITOR_CH1    0x50
 #define ACTUATOR_IMONITOR_CH2    0x57
 #define ACTUATOR_IMONITOR_CH3    0x60
-/**
- * This file is part of the Titan Flight Computer Project
- * Copyright (c) 2025 UW SARP
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- *
- * @file peripheral/actuator.c
- * @authors Mahir Emran, Shlok Rathi
- * @brief Actuator driver implementation for MAX22216/MAX22217 solenoid controller.
- * @note Untested driver.
- */
-
-#include "peripheral/actuator.h"
-#include "peripheral/gpio.h"
-
-// 16-bit dummy word used for read transactions.
-#define ACTUATOR_SPI_DUMMY_DATA 0x0000
-// MSB=1 indicates write, MSB=0 indicates read.
-#define ACTUATOR_SPI_RW_BIT     0x80
-
-// Per-channel register block stride and base for channel 0.
-#define ACTUATOR_CH_STRIDE      0x0E
-#define ACTUATOR_CH0_BASE       0x09
-
-// Offsets within each channel register block.
-#define ACTUATOR_CH_REG_DC_L2H   0x00
-#define ACTUATOR_CH_REG_DC_H     0x01
-#define ACTUATOR_CH_REG_DC_L     0x02
-#define ACTUATOR_CH_REG_TIME_L2H 0x03
-#define ACTUATOR_CH_REG_CTRL0    0x04
-#define ACTUATOR_CH_REG_CTRL1    0x05
-
-// I-monitor register addresses per channel (non-contiguous).
-#define ACTUATOR_IMONITOR_CH0    0x45
-#define ACTUATOR_IMONITOR_CH1    0x50
-#define ACTUATOR_IMONITOR_CH2    0x57
-#define ACTUATOR_IMONITOR_CH3    0x60
 
 // Validate channel enum is within device range.
 static inline bool actuator_channel_valid(actuator_channel_t channel) {
