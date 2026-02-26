@@ -6,7 +6,8 @@
   - [startup.c](https://github.com/SARP-UW/titan/blob/main/src/internal/startup.c)  
 - Allocator  
   - [alloc.h](https://github.com/SARP-UW/titan/blob/main/src/internal/alloc.h)  
-  - [alloc.c](https://github.com/SARP-UW/titan/blob/main/src/internal/alloc.c)  
+  - [alloc.c](https://github.com/SARP-UW/titan/blob/main/src/internal/alloc.c)
+  - [allocator unit test](https://github.com/SARP-UW/titan/blob/main/test/test_alloc.c)  
 - State Machine  
   - [state machine folder](https://github.com/SARP-UW/titan/tree/main/src/app)  
 - Main Loop  
