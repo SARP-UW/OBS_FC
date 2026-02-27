@@ -42,17 +42,17 @@ int spi_init(uint8_t inst);
 /**
  * @brief Perform an SPI data transfer with blocking. 
  * 
- * SPI1: NSS -> A4  | SCK -> A5  | MISO -> A6  | MOSI -> A7  
+ * SPI1: NSS -> PA4  | SCK -> PA5  | MISO -> PA6  | MOSI -> PA7  
  * 
- * SPI2: NSS -> B12 | SCK -> B13 | MISO -> B14 | MOSI -> B15 
+ * SPI2: NSS -> PB12 | SCK -> PB13 | MISO -> PB14 | MOSI -> PB15 
  * 
- * SPI3: NSS -> A15 | SCK -> C10 | MISO -> C11 | MOSI -> C12 
+ * SPI3: NSS -> PA15 | SCK -> PC10 | MISO -> PC11 | MOSI -> PC12 
  * 
- * SPI4: NSS -> E4  | SCK -> E2  | MISO -> E5  | MOSI -> E6  
+ * SPI4: NSS -> PE4  | SCK -> PE2  | MISO -> PE5  | MOSI -> PE6  
  * 
- * SPI5: NSS -> F6  | SCK -> F7  | MISO -> F8  | MOSI -> F9  
+ * SPI5: NSS -> PF6  | SCK -> PF7  | MISO -> PF8  | MOSI -> PF9  
  * 
- * SPI6: NSS -> G8  | SCK -> G12 | MISO -> G13 | MOSI -> G14  
+ * SPI6: NSS -> PG8  | SCK -> PG12 | MISO -> PG13 | MOSI -> PG14  
  *
  * Sends data from the source buffer while simultaneously receiving data into
  * the destination buffer. The function does not return until the entire
