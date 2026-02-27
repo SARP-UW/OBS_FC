@@ -2,7 +2,19 @@
 set -e
 set -o pipefail
 
-OPENOCD_CMD=(openocd -f interface/stlink.cfg -f target/stm32h7x_dual_bank.cfg -c "program titan.elf verify reset exit")
+FW_TARGET="${1:-${FW_TARGET:-titan}}"
+
+case "$FW_TARGET" in
+  titan|test_pwm|test_spi|test_usart|test_oscilloscope)
+    ;;
+  *)
+    echo "Unknown target: $FW_TARGET"
+    echo "Valid targets: titan, test_pwm, test_spi, test_usart, test_oscilloscope"
+    exit 4
+    ;;
+esac
+
+OPENOCD_CMD=(openocd -f interface/stlink.cfg -f target/stm32h7x_dual_bank.cfg -c "program ${FW_TARGET}.elf verify reset exit")
 
 # Use OS to detect the binary
 OS_TYPE=$(uname -s)
@@ -51,7 +63,7 @@ echo "Running cmake .."
 cmake .. || { echo "cmake failed"; exit 20; }
 
 echo "Running make"
-make || { echo "make failed"; exit 21; }
+make "${FW_TARGET}.elf" || { echo "make failed"; exit 21; }
 
 # running openocd
 MAX_ATTEMPTS=3

@@ -45,8 +45,7 @@ typedef struct {
 } radio_cmd_t;
 
 typedef struct {
-  spi_device_t spi_device;
-  spi_config_t spi_config;
+  uint8_t spi_instance;
   uint8_t reset_pin;
   uint8_t nirq_pin;
   bool reset_active_high;
@@ -69,7 +68,7 @@ typedef struct {
 } radio_config_t;
 
 typedef struct {
-  spi_device_t spi_device;
+  uint8_t spi_instance;
   uint8_t reset_pin;
   uint8_t nirq_pin;
   bool reset_active_high;

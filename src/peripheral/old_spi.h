@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
- * @file peripheral/spi.h
+ * @file peripheral/old_spi.h
  * @authors Charles Faisandier
  * @brief Interface for the SPI driver
  */
 
  #pragma once
 //  #include "util/errc.h"
- #include "internal/dma.h"
+ #include "dma.h"
 
 /**************************************************************************************************
  * @section Macros

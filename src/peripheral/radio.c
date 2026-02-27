@@ -50,26 +50,13 @@ static enum ti_errc_t radio_spi_transfer(radio_t *dev, const uint8_t *tx,
     return TI_ERRC_INVALID_ARG;
   }
 
-  if (dev->spi_device.gpio_pin != 0) {
-    tal_set_pin(dev->spi_device.gpio_pin, 0);
+  int result = spi_transfer_sync(dev->spi_instance, (void *)tx, (void *)rx,
+                                (uint8_t)len);
+  if (result != 1) {
+    return TI_ERRC_UNKNOWN;
   }
 
-  struct spi_sync_transfer_t transfer = {
-      .device = dev->spi_device,
-      .source = (void *)tx,
-      .dest = (void *)rx,
-      .size = len,
-      .timeout = dev->spi_timeout,
-      .read_inc = true,
-  };
-
-  enum ti_errc_t errc = spi_transfer_sync(&transfer);
-
-  if (dev->spi_device.gpio_pin != 0) {
-    tal_set_pin(dev->spi_device.gpio_pin, 1);
-  }
-
-  return errc;
+  return TI_ERRC_NONE;
 }
 
 static enum ti_errc_t radio_read_cmd_buf(radio_t *dev, uint8_t *cts,
@@ -137,18 +124,11 @@ enum ti_errc_t radio_init(radio_t *dev, const radio_config_t *config) {
     return TI_ERRC_INVALID_ARG;
   }
 
-  enum ti_errc_t errc = spi_init(config->spi_device.instance,
-                                 (spi_config_t *)&config->spi_config);
-  if (errc != TI_ERRC_NONE) {
-    return errc;
+  if (spi_init(config->spi_instance) != 1) {
+    return TI_ERRC_INVALID_ARG;
   }
 
-  errc = spi_device_init(config->spi_device);
-  if (errc != TI_ERRC_NONE) {
-    return errc;
-  }
-
-  dev->spi_device = config->spi_device;
+  dev->spi_instance = config->spi_instance;
   dev->reset_pin = config->reset_pin;
   dev->nirq_pin = config->nirq_pin;
   dev->reset_active_high = config->reset_active_high;
@@ -173,7 +153,7 @@ enum ti_errc_t radio_init(radio_t *dev, const radio_config_t *config) {
   }
 
   // Reset first so the device starts from a known state.
-  errc = radio_reset(dev);
+  enum ti_errc_t errc = radio_reset(dev);
   if (errc != TI_ERRC_NONE) {
     return errc;
   }

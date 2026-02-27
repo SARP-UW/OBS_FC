@@ -27,6 +27,7 @@
 
 #include "internal/mmio.h"
 #include "peripheral/errc.h"
+#include "peripheral/pwm.h"
 #include "peripheral/spi.h"
 
 /**************************************************************************************************
@@ -70,8 +71,9 @@ typedef enum {
 } actuator_tblank_t;
 
 typedef struct {
-  spi_device_t spi_device;
-  spi_config_t spi_config;
+  uint8_t spi_instance;
+  struct ti_pwm_config_t pwm_config;
+  bool has_pwm_config;
   uint8_t enable_pin;
   uint8_t fault_pin;
   uint8_t stat0_pin;
@@ -81,7 +83,9 @@ typedef struct {
 } actuator_config_t;
 
 typedef struct {
-  spi_device_t spi_device;
+  uint8_t spi_instance;
+  struct ti_pwm_config_t pwm_config;
+  bool has_pwm_config;
   uint8_t enable_pin;
   uint8_t fault_pin;
   uint8_t stat0_pin;

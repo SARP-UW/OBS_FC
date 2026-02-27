@@ -21,8 +21,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "include/mmio.h"
-#include "include/errc.h"
+#include "../internal/mmio.h"
+#include "errc.h"
 
 #pragma once
 

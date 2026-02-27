@@ -9,6 +9,8 @@ on:
 jobs:
   cmake-configure:
     runs-on: ubuntu-latest
+    env:
+      FW_TARGETS: "titan test_pwm test_spi test_usart test_oscilloscope"
 
     steps:
       - name: Checkout repo
@@ -23,3 +25,12 @@ jobs:
         shell: bash
         run: |
           cmake -S src -B src/build
+
+      - name: Build all targets
+        shell: bash
+        run: |
+          cd src/build/
+          for target in $FW_TARGETS; do
+            echo "Building ${target}.elf"
+            make "${target}.elf"
+          done
