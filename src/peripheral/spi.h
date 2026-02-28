@@ -34,35 +34,39 @@
  * before attempting any SPI transfers.
  *
  * @param inst  Identifier of the SPI instance to initialize.
- *
+ * @param ss_list  An array of SS (slave select) pin numbers. Each SS pin represents one slave device. 
+ * @param slave_count  The number of slave devices attached to the instance. This number must match the
+ *                     number of elements in the ss_list array. 
+ * 
  * @return 1 if initialization finishes and the imput parameters are valid.
  */
-int spi_init(uint8_t inst);
+int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count);
 
 /**
  * @brief Perform an SPI data transfer with blocking. 
  * 
- * SPI1: NSS -> PA4  | SCK -> PA5  | MISO -> PA6  | MOSI -> PA7  
+ * SPI1: SCK -> PA5  | MISO -> PA6  | MOSI -> PA7  
  * 
- * SPI2: NSS -> PB12 | SCK -> PB13 | MISO -> PB14 | MOSI -> PB15 
+ * SPI2: SCK -> PB13 | MISO -> PB14 | MOSI -> PB15 
  * 
- * SPI3: NSS -> PA15 | SCK -> PC10 | MISO -> PC11 | MOSI -> PC12 
+ * SPI3: SCK -> PC10 | MISO -> PC11 | MOSI -> PC12 
  * 
- * SPI4: NSS -> PE4  | SCK -> PE2  | MISO -> PE5  | MOSI -> PE6  
+ * SPI4: SCK -> PE2  | MISO -> PE5  | MOSI -> PE6  
  * 
- * SPI5: NSS -> PF6  | SCK -> PF7  | MISO -> PF8  | MOSI -> PF9  
+ * SPI5: SCK -> PF7  | MISO -> PF8  | MOSI -> PF9  
  * 
- * SPI6: NSS -> PG8  | SCK -> PG12 | MISO -> PG13 | MOSI -> PG14  
+ * SPI6: SCK -> PG12 | MISO -> PG13 | MOSI -> PG14  
  *
  * Sends data from the source buffer while simultaneously receiving data into
  * the destination buffer. The function does not return until the entire
  * transfer is complete.
  *
  * @param inst  SPI instance to use for the transfer.
- * @param src   Pointer to the transmit buffer.
- * @param dst   Pointer to the receive buffer.
+ * @param src   Pointer to the transmit (source) buffer.
+ * @param dst   Pointer to the receive (destination) buffer.
  * @param size  Number of bytes to transfer.
+ * @param ss_pin  The SS pin of the slave SPI will communicate with. 
  *
  * @return 1 if the transfer finishes and the imput parameters are valid.
  */
-int spi_transfer_sync(uint8_t inst, void* src, void* dst, uint8_t size);
+int spi_transfer_sync(uint8_t inst, uint8_t ss_pin, void* src, void* dst, uint8_t size);

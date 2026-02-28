@@ -21,7 +21,33 @@
 
 #include "peripheral/spi.h"
 #include "internal/mmio.h"
+#include "peripheral/gpio.h"
 #include <stdint.h>
+
+#define INST1_SCK 44
+#define INST1_MISO 45
+#define INST1_MOSI 46
+
+#define INST2_SCK 73
+#define INST2_MISO 74
+#define INST2_MOSI 75
+
+#define INST3_SCK 109
+#define INST3_MISO 110
+#define INST3_MOSI 111
+
+#define INST4_SCK 1
+#define INST4_MISO 4
+#define INST4_MOSI 5
+
+#define INST5_SCK 21
+#define INST5_MISO 22
+#define INST5_MOSI 23
+
+#define INST6_SCK 125
+#define INST6_MISO 126
+#define INST6_MOSI 127
+
 
 // SPI instances
 enum inst {
@@ -33,58 +59,40 @@ enum inst {
     INST_SIX
 };
 
-static void cs_low(uint8_t inst) {
-    switch (inst) {
-        case INST_ONE:
-            CLR_FIELD(GPIOx_ODR[0], GPIOx_ODR_ODx[4]);
-            break;
-        case INST_TWO:
-            CLR_FIELD(GPIOx_ODR[1], GPIOx_ODR_ODx[12]);  
-            break;  
-        case INST_THREE:
-            CLR_FIELD(GPIOx_ODR[0], GPIOx_ODR_ODx[15]); 
-            break;
-        case INST_FOUR:
-            CLR_FIELD(GPIOx_ODR[4], GPIOx_ODR_ODx[4]); 
-            break;
-        case INST_FIVE:
-            CLR_FIELD(GPIOx_ODR[5], GPIOx_ODR_ODx[6]);
-            break;
-        case INST_SIX:
-            CLR_FIELD(GPIOx_ODR[6], GPIOx_ODR_ODx[14]);
-            break;
+// Enables the clock of all SS pins
+static inline void enable_ss_clocks(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_enable_clock(ss_list[i]);
     }
 }
 
-static void cs_high(uint8_t inst) {
-    switch (inst) {
-        case INST_ONE:
-            SET_FIELD(GPIOx_ODR[0], GPIOx_ODR_ODx[4]);
-            break;
-        case INST_TWO:
-            SET_FIELD(GPIOx_ODR[1], GPIOx_ODR_ODx[12]);  
-            break;  
-        case INST_THREE:
-            SET_FIELD(GPIOx_ODR[0], GPIOx_ODR_ODx[15]); 
-            break;
-        case INST_FOUR:
-            SET_FIELD(GPIOx_ODR[4], GPIOx_ODR_ODx[4]); 
-            break;
-        case INST_FIVE:
-            SET_FIELD(GPIOx_ODR[5], GPIOx_ODR_ODx[6]);
-            break;
-        case INST_SIX:
-            SET_FIELD(GPIOx_ODR[6], GPIOx_ODR_ODx[14]);
-            break;
+// Sets all SS pins to push pull mode
+static inline void ss_push_pull(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_set_drain(ss_list[i], 0);
     }
 }
 
-int spi_init(uint8_t inst) {
+// Sets all SS pins to output mode
+static inline void ss_output_mode(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_set_mode(ss_list[i], 1);
+    }
+}
+
+// Sets all SS pins to high
+static inline void ss_high(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_set_pin(ss_list[i], 1);
+    }
+}
+
+int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
     if (inst > 6 || inst < 1) {
         return -1;
     }
 
-    // Enable clocks
+    // Enable clocks for MOSI, MISO, and SCK
     switch (inst) {
         case INST_ONE:
             SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOAEN);
@@ -93,7 +101,6 @@ int spi_init(uint8_t inst) {
             SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOBEN);
             break;
         case INST_THREE:
-            SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOAEN);
             SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOCEN);
             break;
         case INST_FOUR:
@@ -106,121 +113,125 @@ int spi_init(uint8_t inst) {
             SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOGEN);
             break;
     }
+
+    // Enable clocks for all SS pins
+    enable_ss_clocks(ss_list, slave_count);
+
     // Configure pins
     switch (inst) {
         case INST_ONE:
             // Set push pull
-            CLR_FIELD(GPIOx_OTYPER[0], GPIOx_OTYPER_OTx[4]);
-            CLR_FIELD(GPIOx_OTYPER[0], GPIOx_OTYPER_OTx[5]);
-            CLR_FIELD(GPIOx_OTYPER[0], GPIOx_OTYPER_OTx[7]);
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST1_SCK, 0);
+            tal_set_drain(INST1_MOSI, 0);
             // Set mode 
-            WRITE_FIELD(GPIOx_MODER[0], GPIOx_MODER_MODEx[4], 0b01);
-            WRITE_FIELD(GPIOx_MODER[0], GPIOx_MODER_MODEx[5], 0b10);
-            WRITE_FIELD(GPIOx_MODER[0], GPIOx_MODER_MODEx[6], 0b10);
-            WRITE_FIELD(GPIOx_MODER[0], GPIOx_MODER_MODEx[7], 0b10);
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST1_SCK, 2);
+            tal_set_mode(INST1_MISO, 2);
+            tal_set_mode(INST1_MOSI, 2);
             // Set alternate mode
-            WRITE_FIELD(GPIOx_AFRL[0], GPIOx_AFRL_AFSELx[5], 0b0101);
-            WRITE_FIELD(GPIOx_AFRL[0], GPIOx_AFRL_AFSELx[6], 0b0101);
-            WRITE_FIELD(GPIOx_AFRL[0], GPIOx_AFRL_AFSELx[7], 0b0101);
+            tal_alternate_mode(INST1_SCK, 0101);
+            tal_alternate_mode(INST1_MISO, 0101);
+            tal_alternate_mode(INST1_MOSI, 0101);
             // Set very high speed
-            WRITE_FIELD(GPIOx_OSPEEDR[0],GPIOx_OSPEEDR_OSPEEDx[5], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[0],GPIOx_OSPEEDR_OSPEEDx[6], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[0],GPIOx_OSPEEDR_OSPEEDx[7], 0b11);
+            tal_set_speed(INST1_SCK, 3);
+            tal_set_speed(INST1_MISO, 3);
+            tal_set_speed(INST1_MOSI, 3);
             break;
         case INST_TWO:
             // Set push pull
-            CLR_FIELD(GPIOx_OTYPER[1], GPIOx_OTYPER_OTx[12]);
-            CLR_FIELD(GPIOx_OTYPER[1], GPIOx_OTYPER_OTx[13]);
-            CLR_FIELD(GPIOx_OTYPER[1], GPIOx_OTYPER_OTx[15]);
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST2_SCK, 0);
+            tal_set_drain(INST2_MOSI, 0);
             // Set mode 
-            WRITE_FIELD(GPIOx_MODER[1], GPIOx_MODER_MODEx[12], 0b01);
-            WRITE_FIELD(GPIOx_MODER[1], GPIOx_MODER_MODEx[13], 0b10);
-            WRITE_FIELD(GPIOx_MODER[1], GPIOx_MODER_MODEx[14], 0b10);
-            WRITE_FIELD(GPIOx_MODER[1], GPIOx_MODER_MODEx[15], 0b10);
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST2_SCK, 2);
+            tal_set_mode(INST2_MISO, 2);
+            tal_set_mode(INST2_MOSI, 2);
             // Set alternate mode
-            WRITE_FIELD(GPIOx_AFRH[1], GPIOx_AFRH_AFSELx[5], 0b0101);
-            WRITE_FIELD(GPIOx_AFRH[1], GPIOx_AFRH_AFSELx[6], 0b0101);
-            WRITE_FIELD(GPIOx_AFRH[1], GPIOx_AFRH_AFSELx[7], 0b0101);
+            tal_alternate_mode(INST2_SCK, 0101);
+            tal_alternate_mode(INST2_MISO, 0101);
+            tal_alternate_mode(INST2_MOSI, 0101);
             // Set very high speed
-            WRITE_FIELD(GPIOx_OSPEEDR[1],GPIOx_OSPEEDR_OSPEEDx[13], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[1],GPIOx_OSPEEDR_OSPEEDx[14], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[1],GPIOx_OSPEEDR_OSPEEDx[15], 0b11);
+            tal_set_speed(INST2_SCK, 3);
+            tal_set_speed(INST2_MISO, 3);
+            tal_set_speed(INST2_MOSI, 3);
             break;
         case INST_THREE:
             // Set push pull
-            CLR_FIELD(GPIOx_OTYPER[0], GPIOx_OTYPER_OTx[15]); 
-            CLR_FIELD(GPIOx_OTYPER[2], GPIOx_OTYPER_OTx[10]);
-            CLR_FIELD(GPIOx_OTYPER[2], GPIOx_OTYPER_OTx[12]);
+            ss_push_pull(ss_list, slave_count); 
+            tal_set_drain(INST3_SCK, 0);
+            tal_set_drain(INST3_MOSI, 0);
             // Set mode 
-            WRITE_FIELD(GPIOx_MODER[0], GPIOx_MODER_MODEx[15], 0b01);
-            WRITE_FIELD(GPIOx_MODER[2], GPIOx_MODER_MODEx[10], 0b10);
-            WRITE_FIELD(GPIOx_MODER[2], GPIOx_MODER_MODEx[11], 0b10);
-            WRITE_FIELD(GPIOx_MODER[2], GPIOx_MODER_MODEx[12], 0b10);
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST3_SCK, 2);
+            tal_set_mode(INST3_MISO, 2);
+            tal_set_mode(INST3_MOSI, 2);
             // Set alternate mode
-            WRITE_FIELD(GPIOx_AFRH[2], GPIOx_AFRH_AFSELx[2], 0b0110);
-            WRITE_FIELD(GPIOx_AFRH[2], GPIOx_AFRH_AFSELx[3], 0b0110);
-            WRITE_FIELD(GPIOx_AFRH[2], GPIOx_AFRH_AFSELx[4], 0b0110);
+            tal_alternate_mode(INST3_SCK, 0110);
+            tal_alternate_mode(INST3_MISO, 0110);
+            tal_alternate_mode(INST3_MOSI, 0110);
             // Set very high speed
-            WRITE_FIELD(GPIOx_OSPEEDR[2],GPIOx_OSPEEDR_OSPEEDx[10], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[2],GPIOx_OSPEEDR_OSPEEDx[11], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[2],GPIOx_OSPEEDR_OSPEEDx[12], 0b11);
+            tal_set_speed(INST3_SCK, 3);
+            tal_set_speed(INST3_MISO, 3);
+            tal_set_speed(INST3_MOSI, 3);
             break;
         case INST_FOUR:
             // Set push pull
-            CLR_FIELD(GPIOx_OTYPER[4], GPIOx_OTYPER_OTx[4]);
-            CLR_FIELD(GPIOx_OTYPER[4], GPIOx_OTYPER_OTx[2]);
-            CLR_FIELD(GPIOx_OTYPER[4], GPIOx_OTYPER_OTx[6]);
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST4_SCK, 0);
+            tal_set_drain(INST4_MOSI, 0);
             // Set mode 
-            WRITE_FIELD(GPIOx_MODER[4], GPIOx_MODER_MODEx[4], 0b01); 
-            WRITE_FIELD(GPIOx_MODER[4], GPIOx_MODER_MODEx[2], 0b10);
-            WRITE_FIELD(GPIOx_MODER[4], GPIOx_MODER_MODEx[5], 0b10);
-            WRITE_FIELD(GPIOx_MODER[4], GPIOx_MODER_MODEx[6], 0b10);
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST4_SCK, 2);
+            tal_set_mode(INST4_MISO, 2);
+            tal_set_mode(INST4_MOSI, 2);
             // Set alternate mode
-            WRITE_FIELD(GPIOx_AFRL[4], GPIOx_AFRL_AFSELx[2], 0b0101);
-            WRITE_FIELD(GPIOx_AFRL[4], GPIOx_AFRL_AFSELx[5], 0b0101);
-            WRITE_FIELD(GPIOx_AFRL[4], GPIOx_AFRL_AFSELx[6], 0b0101);
+            tal_alternate_mode(INST4_SCK, 0101);
+            tal_alternate_mode(INST4_MISO, 0101);
+            tal_alternate_mode(INST4_MOSI, 0101);
             // Set very high speed
-            WRITE_FIELD(GPIOx_OSPEEDR[4],GPIOx_OSPEEDR_OSPEEDx[2], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[4],GPIOx_OSPEEDR_OSPEEDx[5], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[4],GPIOx_OSPEEDR_OSPEEDx[6], 0b11);
+            tal_set_speed(INST4_SCK, 3);
+            tal_set_speed(INST4_MISO, 3);
+            tal_set_speed(INST4_MOSI, 3);
             break;
         case INST_FIVE:
             // Set push pull
-            CLR_FIELD(GPIOx_OTYPER[5], GPIOx_OTYPER_OTx[6]);
-            CLR_FIELD(GPIOx_OTYPER[5], GPIOx_OTYPER_OTx[7]);
-            CLR_FIELD(GPIOx_OTYPER[5], GPIOx_OTYPER_OTx[9]);
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST5_SCK, 0);
+            tal_set_drain(INST5_MOSI, 0);
             // Set mode 
-            WRITE_FIELD(GPIOx_MODER[5], GPIOx_MODER_MODEx[6], 0b01); 
-            WRITE_FIELD(GPIOx_MODER[5], GPIOx_MODER_MODEx[7], 0b10);
-            WRITE_FIELD(GPIOx_MODER[5], GPIOx_MODER_MODEx[8], 0b10);
-            WRITE_FIELD(GPIOx_MODER[5], GPIOx_MODER_MODEx[9], 0b10);
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST5_SCK, 2);
+            tal_set_mode(INST5_MISO, 2);
+            tal_set_mode(INST5_MOSI, 2);
             // Set alternate mode
-            WRITE_FIELD(GPIOx_AFRL[5], GPIOx_AFRL_AFSELx[7], 0b0101);
-            WRITE_FIELD(GPIOx_AFRH[5], GPIOx_AFRH_AFSELx[0], 0b0101);
-            WRITE_FIELD(GPIOx_AFRH[5], GPIOx_AFRH_AFSELx[1], 0b0101);
+            tal_alternate_mode(INST5_SCK, 0101);
+            tal_alternate_mode(INST5_MISO, 0101);
+            tal_alternate_mode(INST5_MOSI, 0101);
             // Set very high speed
-            WRITE_FIELD(GPIOx_OSPEEDR[5],GPIOx_OSPEEDR_OSPEEDx[7], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[5],GPIOx_OSPEEDR_OSPEEDx[8], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[5],GPIOx_OSPEEDR_OSPEEDx[9], 0b11);
+            tal_set_speed(INST5_SCK, 3);
+            tal_set_speed(INST5_MISO, 3);
+            tal_set_speed(INST5_MOSI, 3);
             break;
         case INST_SIX:
             // Set push pull
-            CLR_FIELD(GPIOx_OTYPER[6], GPIOx_OTYPER_OTx[8]);
-            CLR_FIELD(GPIOx_OTYPER[6], GPIOx_OTYPER_OTx[12]);
-            CLR_FIELD(GPIOx_OTYPER[6], GPIOx_OTYPER_OTx[14]);
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST6_SCK, 0);
+            tal_set_drain(INST6_MOSI, 0);
             // Set mode 
-            WRITE_FIELD(GPIOx_MODER[6], GPIOx_MODER_MODEx[8], 0b01);
-            WRITE_FIELD(GPIOx_MODER[6], GPIOx_MODER_MODEx[12], 0b10);
-            WRITE_FIELD(GPIOx_MODER[6], GPIOx_MODER_MODEx[13], 0b10);
-            WRITE_FIELD(GPIOx_MODER[6], GPIOx_MODER_MODEx[14], 0b10);
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST6_SCK, 2);
+            tal_set_mode(INST6_MISO, 2);
+            tal_set_mode(INST6_MOSI, 2);
             // Set alternate mode
-            WRITE_FIELD(GPIOx_AFRH[6], GPIOx_AFRH_AFSELx[4], 0b0101);
-            WRITE_FIELD(GPIOx_AFRH[6], GPIOx_AFRH_AFSELx[5], 0b0101);
-            WRITE_FIELD(GPIOx_AFRH[6], GPIOx_AFRH_AFSELx[6], 0b0101);
+            tal_alternate_mode(INST6_SCK, 0101);
+            tal_alternate_mode(INST6_MISO, 0101);
+            tal_alternate_mode(INST6_MOSI, 0101);
             // Set very high speed
-            WRITE_FIELD(GPIOx_OSPEEDR[6],GPIOx_OSPEEDR_OSPEEDx[12], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[6],GPIOx_OSPEEDR_OSPEEDx[13], 0b11);
-            WRITE_FIELD(GPIOx_OSPEEDR[6],GPIOx_OSPEEDR_OSPEEDx[14], 0b11);
+            tal_set_speed(INST6_SCK, 3);
+            tal_set_speed(INST6_MISO, 3);
+            tal_set_speed(INST6_MOSI, 3);
             break;
     }
 
@@ -258,8 +269,8 @@ int spi_init(uint8_t inst) {
             break;
     }
     
-    // Ensure CS line is high
-    cs_high(inst);
+    // Ensure SS lines are high
+    ss_high(ss_list, slave_count);
 
     // Ensure SPI hardware is disabled before config
     CLR_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
@@ -267,7 +278,7 @@ int spi_init(uint8_t inst) {
     // Clear mode selection field
     CLR_FIELD(SPIx_CGFR[inst], SPIx_CGFR_I2SMOD);
     // Set threshold level
-    WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_FTHVL, 0x0);
+    WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_FTHVL, 0x00);
     // Set baudrate prescaler ( 64MHz /8  = 8MHz) 
     WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_MBR, 0b111); 
     // Set data size
@@ -284,8 +295,8 @@ int spi_init(uint8_t inst) {
     return 1;
 }
 
-int spi_transfer_sync(uint8_t inst, void* src, void* dst, uint8_t size) {
-    if (size == 0) return -1;
+int spi_transfer_sync(uint8_t inst, uint8_t ss_pin, void* src, void* dst, uint8_t size) {
+    if (size == 0 || ss_pin > 255) return -1;
 
     CLR_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
     WRITE_FIELD(SPIx_CR2[inst], SPIx_CR2_TSIZE, size);
@@ -293,8 +304,8 @@ int spi_transfer_sync(uint8_t inst, void* src, void* dst, uint8_t size) {
 
     while(!READ_FIELD(SPIx_SR[inst], SPIx_SR_TXP));
 
-    // Pull CS pin low
-    cs_low(inst);
+    // Pull SS pin low
+    tal_set_pin(ss_pin, 0);
 
     for (int i = 0; i < size; i++) {
         while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_TXP));
@@ -314,8 +325,8 @@ int spi_transfer_sync(uint8_t inst, void* src, void* dst, uint8_t size) {
     while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_EOT));
     SET_FIELD(SPIx_IFCR[inst], SPIx_IFCR_EOTC);
 
-    // Pull CS pin high to end transfer
-    cs_high(inst);
+    // Pull SS pin high to end transfer
+    tal_set_pin(ss_pin, 1);
 
     return 1;
 }
