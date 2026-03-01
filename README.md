@@ -61,5 +61,7 @@ The easiest way to compile will be using the provided ```./build.sh``` file. Fir
 If you build a specific target, it will also try to flash to devboard. You may have to unplug/replug the STM32 devboard due to having to wipe flash memory.
 * This is a reason I am considering Docker, as STM32 devboard has a CLI that allows for automating that, but it is not available on MacOS.
 
+You can also do ```./build.sh clean``` to remove all ```src/build``` files, if needed.
+
 ### Committing
 * You should be passing the ```./build.sh commit_check``` check before committing/opening a PR.

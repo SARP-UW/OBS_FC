@@ -6,14 +6,22 @@ FW_TARGET="${1:-${FW_TARGET:-titan}}"
 FW_TARGETS=(titan test_pwm test_spi test_usart test_oscilloscope)
 
 case "$FW_TARGET" in
-  titan|test_pwm|test_spi|test_usart|test_oscilloscope|commit_check|all)
+  titan|test_pwm|test_spi|test_usart|test_oscilloscope|commit_check|all|clean)
     ;;
   *)
     echo "Unknown target: $FW_TARGET"
-    echo "Valid targets: titan, test_pwm, test_spi, test_usart, test_oscilloscope, commit_check, all"
+    echo "Valid targets: titan, test_pwm, test_spi, test_usart, test_oscilloscope, commit_check, all, clean"
     exit 4
     ;;
 esac
+
+if [ "$FW_TARGET" = "clean" ]; then
+  echo "Cleaning src/build contents..."
+  mkdir -p src/build
+  find src/build -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  echo "Clean complete."
+  exit 0
+fi
 
 if [ "$FW_TARGET" = "commit_check" ]; then
   echo "Running local pre-commit check:"

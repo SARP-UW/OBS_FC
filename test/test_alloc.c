@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -207,11 +209,12 @@ static void test_alloc_free_realloc(void) {
     void* a = alloc(16);
     assert_check(a != NULL, "alloc 16");
     assert_check(!isFree(a), "allocated marked free");
+    uintptr_t a_addr = (uintptr_t)a;
     free(a);
-    assert_check(isFree(a), "freed block ok");
+    assert_check(isFree((void*)a_addr), "freed block ok");
     void* b = alloc(16);
     assert_check(b != NULL, "realloc block");
-    assert_check(b == a, "same block reused");
+    assert_check((uintptr_t)b == a_addr, "same block reused");
     free(b);
 }
 
@@ -220,17 +223,19 @@ static void test_double_free(void) {
     reset_heap();
     void* a = alloc(32);
     assert_check(a != NULL, "alloc 32");
+    uintptr_t a_addr = (uintptr_t)a;
     free(a);
-    assert_check(isFree(a), "freed block ok");
-    free(a); // second freed on same place
-    assert_check(isFree(a), "double free safe");
+    assert_check(isFree((void*)a_addr), "freed block ok");
+    free((void*)a_addr); // second freed on same place
+    assert_check(isFree((void*)a_addr), "double free safe");
 }
 
 // free NULL / out-of-range
 static void test_free_null_and_oob(void) {
     reset_heap();
     free(NULL); // no-op
-    void* oob = (void*)((unsigned char*)HEAP_START + TOTAL_HEAP_SIZE + 16);
+    uintptr_t heap_base = (uintptr_t)HEAP_START;
+    void* oob = (void*)(heap_base + TOTAL_HEAP_SIZE + 16u);
     free(oob); // should not crash
     assert_check(!isFree(oob), "oob still not free");
 }
@@ -267,11 +272,14 @@ static void test_isFree_across_pools(void) {
     void* c = alloc(64);
     assert_check(a && b && c, "multi alloc");
     assert_check(!isFree(a) && !isFree(b) && !isFree(c), "blocks in use");
+    uintptr_t b_addr = (uintptr_t)b;
     free(b);
-    assert_check(isFree(b), "freed ok");
+    assert_check(isFree((void*)b_addr), "freed ok");
     assert_check(!isFree(a) && !isFree(c), "others unaffected");
+    uintptr_t a_addr = (uintptr_t)a;
+    uintptr_t c_addr = (uintptr_t)c;
     free(a); free(c);
-    assert_check(isFree(a) && isFree(c), "all freed");
+    assert_check(isFree((void*)a_addr) && isFree((void*)c_addr), "all freed");
 }
 
 // stress alloc/free pattern
