@@ -53,6 +53,8 @@ set(COMMON_SOURCES
   ${CMAKE_SOURCE_DIR}/src/peripheral/uart.c
   ${CMAKE_SOURCE_DIR}/src/peripheral/dma.c
   ${CMAKE_SOURCE_DIR}/src/peripheral/spi.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/qspi.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/systick.c
   ${CMAKE_SOURCE_DIR}/src/devices/actuator.c
   ${CMAKE_SOURCE_DIR}/src/devices/radio.c
   ${CMAKE_SOURCE_DIR}/src/devices/barometer.c
