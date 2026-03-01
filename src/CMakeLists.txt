@@ -50,15 +50,16 @@ set(COMMON_SOURCES
   ${CMAKE_SOURCE_DIR}/internal/interrupt.c
   ${CMAKE_SOURCE_DIR}/internal/vtable.c
   ${CMAKE_SOURCE_DIR}/internal/mmio.c
+  ${CMAKE_SOURCE_DIR}/internal/alloc.c
   ${CMAKE_SOURCE_DIR}/peripheral/gpio.c
   ${CMAKE_SOURCE_DIR}/peripheral/watchdog.c
   ${CMAKE_SOURCE_DIR}/peripheral/pwm.c
-  ${CMAKE_SOURCE_DIR}/internal/alloc.c
   ${CMAKE_SOURCE_DIR}/peripheral/uart.c
   ${CMAKE_SOURCE_DIR}/peripheral/dma.c
   ${CMAKE_SOURCE_DIR}/peripheral/spi.c
-  ${CMAKE_SOURCE_DIR}/peripheral/actuator.c
-  ${CMAKE_SOURCE_DIR}/peripheral/radio.c
+  ${CMAKE_SOURCE_DIR}/devices/actuator.c
+  ${CMAKE_SOURCE_DIR}/devices/radio.c
+  ${CMAKE_SOURCE_DIR}/devices/barometer.c
 )
 
 function(add_firmware_target target_name entry_file)

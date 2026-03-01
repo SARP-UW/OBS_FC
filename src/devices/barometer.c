@@ -19,11 +19,12 @@
  * @brief MS561101BA03 Barometer driver
  */
 
+#include "barometer.h"
+#include <stdbool.h>
 #include <stdint.h>
-#include "include/spi.h"
-#include "include/errc.h"
-#include "myWork/systick.h"
-#include "myWork/barometer.h"
+#include "peripheral/spi.h"
+#include "peripheral/errc.h"
+#include "peripheral/systick.h"
 
 #define D1_BASE_CMD 0x40
 #define D2_BASE_CMD 0x50
@@ -42,11 +43,11 @@ typedef enum {
     PROM_ADDR_CRC          = 0xAE
 }prom_addr_t;
 
-static inline ti_errc_t validate_dev_values(barometer_t *dev) {
-    ti_errc_t status = TI_ERRC_NONE;
+static inline enum ti_errc_t validate_dev_values(barometer_t *dev) {
+    enum ti_errc_t status = TI_ERRC_NONE;
 
     //Check that SPI instance is valid
-    if ((dev->device.instance < 1) || (dev->device.instance > 6)) status = TI_ERRC_INVALID_ARG;
+    if ((dev->spi_inst < 1) || (dev->spi_inst > 6)) status = TI_ERRC_INVALID_ARG;
 
     //TODO: May also want to check CS pin
 
@@ -75,10 +76,10 @@ static void barometer_delay(uint8_t osr) {
         case (OSR_1024): conversion_time = 3;  break;
         case (OSR_2048): conversion_time = 5;  break;
         case (OSR_4096): conversion_time = 10; break;
-        default: return TI_ERRC_INVALID_ARG;
+        default: return;
     }
 
-    delay(conversion_time);
+    systick_delay(conversion_time);
 }
 
 // Sends a command to the sensor and reads the multi-byte response.
@@ -87,18 +88,7 @@ static uint32_t barometer_transfer(barometer_t *dev, uint8_t cmd, uint8_t bytes_
     uint8_t rx[4] = {0, 0, 0, 0};
     uint32_t result = 0;
 
-    struct spi_sync_transfer_t transfer = {
-        .device = dev->device,
-        .source = tx,
-        .dest = rx,
-        .size = bytes_to_read + 1,
-        .timeout = 1,
-        .read_inc = true
-    };
-
-    spi_block(dev->device);
-    spi_sync_transfer_t(&transfer);
-    spi_unblock(dev->device);
+    spi_transfer_sync(dev->spi_inst, dev->ss_pin, tx, rx, bytes_to_read + 1);
 
     if (bytes_to_read == 2) {
         result = (uint32_t)((rx[1] << 8) | rx[2]);
@@ -113,9 +103,9 @@ static uint32_t barometer_transfer(barometer_t *dev, uint8_t cmd, uint8_t bytes_
  * @section Public Function Implementations
  **************************************************************************************************/
 
-ti_errc_t barometer_init(barometer_t *dev) {
+enum ti_errc_t barometer_init(barometer_t *dev) {
     // Check OSR and device fields
-    ti_errc_t status = validate_dev(dev);
+    enum ti_errc_t status = validate_dev_values(dev);
     if (status != TI_ERRC_NONE) return status;
 
     // Reset the sensor

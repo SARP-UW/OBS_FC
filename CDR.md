@@ -45,14 +45,15 @@ This file serves to provide links for code files for those attending the CDR to 
 - IMU  
   - Todo  
 - Actuator  
-  - [actuator.h](https://github.com/SARP-UW/titan/blob/main/src/peripheral/actuator.h)  
-  - [actuator.c](https://github.com/SARP-UW/titan/blob/main/src/peripheral/actuator.c)  
+  - [actuator.h](https://github.com/SARP-UW/titan/blob/main/src/devices/actuator.h)  
+  - [actuator.c](https://github.com/SARP-UW/titan/blob/main/src/devices/actuator.c)  
 - Radio  
-  - Todo  
+  - [radio.h](https://github.com/SARP-UW/titan/blob/main/src/devices/radio.h)  
+  - [radio.c](https://github.com/SARP-UW/titan/blob/main/src/devices/radio.c)  
 - Temperature Sensor  
-  - Todo
+  - [temp_sensor.h](https://github.com/SARP-UW/titan/blob/main/src/devices/temp_sensor.h)  
 - GNSS  
-  - Todo
+  - [gnss.h](https://github.com/SARP-UW/titan/blob/main/src/devices/gnss.h) 
 
  ### Testing Code
   - [test_alloc.c](https://github.com/SARP-UW/titan/blob/main/test/test_alloc.c)
