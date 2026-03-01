@@ -235,9 +235,9 @@ static void test_free_null_and_oob(void) {
     reset_heap();
     free(NULL); // no-op
     uintptr_t heap_base = (uintptr_t)HEAP_START;
-    void* oob = (void*)(heap_base + TOTAL_HEAP_SIZE + 16u);
-    free(oob); // should not crash
-    assert_check(!isFree(oob), "oob still not free");
+    uintptr_t oob_addr = heap_base + TOTAL_HEAP_SIZE + 16u;
+    free((void*)oob_addr); // should not crash
+    assert_check(!isFree((void*)oob_addr), "oob still not free");
 }
 
 // exhaust smallest pool
