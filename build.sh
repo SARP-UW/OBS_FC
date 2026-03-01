@@ -6,14 +6,25 @@ FW_TARGET="${1:-${FW_TARGET:-titan}}"
 FW_TARGETS=(titan test_pwm test_spi test_usart test_oscilloscope)
 
 case "$FW_TARGET" in
-  titan|test_pwm|test_spi|test_usart|test_oscilloscope|commit_check|all|clean)
+  titan|test_pwm|test_spi|test_usart|test_oscilloscope|commit_check|all|clean|docs)
     ;;
   *)
     echo "Unknown target: $FW_TARGET"
-    echo "Valid targets: titan, test_pwm, test_spi, test_usart, test_oscilloscope, commit_check, all, clean"
+    echo "Valid targets: titan, test_pwm, test_spi, test_usart, test_oscilloscope, commit_check, all, clean, docs"
     exit 4
     ;;
 esac
+
+if [ "$FW_TARGET" = "docs" ]; then
+  if ! command -v doxygen &> /dev/null; then
+    echo "Error: doxygen is not installed. Install with: brew install doxygen"
+    exit 5
+  fi
+  echo "Generating Doxygen documentation..."
+  doxygen Doxyfile
+  echo "Docs generated in docs/html/"
+  exit 0
+fi
 
 if [ "$FW_TARGET" = "clean" ]; then
   echo "Cleaning build/ contents..."

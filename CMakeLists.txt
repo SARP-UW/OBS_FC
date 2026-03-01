@@ -119,3 +119,13 @@ add_custom_command(
 )
 add_custom_target(test_alloc_target ALL DEPENDS ${CMAKE_BINARY_DIR}/test_alloc)
 add_test(NAME test_alloc COMMAND ${CMAKE_BINARY_DIR}/test_alloc)
+
+# Doxygen documentation (optional, run with: cmake --build build --target docs)
+find_package(Doxygen QUIET)
+if(DOXYGEN_FOUND)
+  add_custom_target(docs
+    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_SOURCE_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Generating Doxygen documentation"
+  )
+endif()
