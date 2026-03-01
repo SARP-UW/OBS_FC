@@ -16,38 +16,39 @@ case "$FW_TARGET" in
 esac
 
 if [ "$FW_TARGET" = "clean" ]; then
-  echo "Cleaning src/build contents..."
-  mkdir -p src/build
-  find src/build -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  echo "Cleaning build/ contents..."
+  mkdir -p build
+  find build -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   echo "Clean complete."
   exit 0
 fi
 
 if [ "$FW_TARGET" = "commit_check" ]; then
   echo "Running local pre-commit check:"
-  cmake -S src -B src/build || { echo "cmake configure failed"; exit 20; }
+  cmake -S . -B build || { echo "cmake configure failed"; exit 20; }
 
-  cd src/build/ || exit 22
+  cd build/ || exit 22
   for target in "${FW_TARGETS[@]}"; do
     echo "Building ${target}.elf"
     make "${target}.elf" || { echo "make failed for ${target}.elf"; exit 21; }
   done
-  cd ../../
-  gcc -std=c18 -Wall -Wextra ./src/internal/alloc.c ./test/test_alloc.c -o src/build/test_alloc || { echo "Compile test_alloc failed"; exit 21; }
+  make test_alloc_target || { echo "make test_alloc failed"; exit 21; }
   echo "Built target test_alloc"
+  ctest --output-on-failure || { echo "Unit tests failed"; exit 21; }
+  cd ../
   echo "Local CMake check passed. Good to go for committing! :D"
   exit 0
 fi
 
 if [ "$FW_TARGET" = "all" ]; then
   echo "Running full build (make all):"
-  cmake -S src -B src/build || { echo "cmake configure failed"; exit 20; }
+  cmake -S . -B build || { echo "cmake configure failed"; exit 20; }
 
-  cd src/build/ || exit 22
+  cd build/ || exit 22
   make all || { echo "make all failed"; exit 21; }
-  cd ../../
-  gcc -std=c18 -Wall -Wextra ./src/internal/alloc.c ./test/test_alloc.c -o src/build/test_alloc || { echo "Compile test_alloc failed"; exit 21; }
   echo "Built target test_alloc"
+  ctest --output-on-failure || { echo "Unit tests failed"; exit 21; }
+  cd ../
 
   echo "Full build passed."
   exit 0
@@ -94,7 +95,6 @@ run_usb_reset() {
 run_usb_reset
 
 # Building project
-cd "src"
 mkdir -p "build/"
 cd "build/"
 
@@ -136,9 +136,9 @@ while [ $attempt_count -lt $MAX_ATTEMPTS ]; do
         echo "then disconnect the board and press Enter to continue."
         read -r -p "Press Enter after you have completed the full chip erase. "
         # re-run USB reset to re-enumerate device
-        cd ../../ 
+        cd ../ 
         run_usb_reset
-        cd src/build/
+        cd build/
         rm -f "$OPENOCD_OUTPUT_FILE"
         continue
         ;;
@@ -185,9 +185,9 @@ while [ $attempt_count -lt $MAX_ATTEMPTS ]; do
       "$CLI_BIN" -c port=SWD -d 0 -dis
       rc=$?; if [ $rc -ne 0 ]; then echo "CLI disconnect returned rc=$rc (nonfatal)"; fi
 
-      cd ../../ 
+      cd ../ 
       run_usb_reset
-      cd src/build/
+      cd build/
       rm -f "$OPENOCD_OUTPUT_FILE"
       echo "Recovery via STM32CubeProgrammer CLI complete — retrying OpenOCD flash..."
       continue
@@ -197,10 +197,10 @@ while [ $attempt_count -lt $MAX_ATTEMPTS ]; do
   # Checksum mismatch
   if printf '%s\n' "$output" | grep -iq -- "checksum mismatch"; then
     echo "OpenOCD reported checksum mismatch (attempt $checksum_fail_count/$MAX_CHECKSUM_RETRIES)."
-    cd ../../
+    cd ../
     echo "Running USB reset"
     run_usb_reset
-    cd src/build/
+    cd build/
     rm -f "$OPENOCD_OUTPUT_FILE"
     continue
   fi

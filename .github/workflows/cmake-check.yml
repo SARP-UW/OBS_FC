@@ -7,10 +7,8 @@ on:
   pull_request:
 
 jobs:
-  cmake-configure:
+  cmake-check:
     runs-on: ubuntu-latest
-    env:
-      FW_TARGETS: "titan test_pwm test_spi test_usart test_oscilloscope"
 
     steps:
       - name: Checkout repo
@@ -21,19 +19,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi
 
-      - name: Run CMake configure
-        shell: bash
-        run: |
-          cmake -S src -B src/build
+      - name: CMake configure
+        run: cmake -S . -B build
 
       - name: Build all targets
-        shell: bash
-        run: |
-          cd src/build/
-          for target in $FW_TARGETS; do
-            echo "Building ${target}.elf"
-            make "${target}.elf"
-          done
-          cd ../../
-          gcc -std=c18 -Wall -Wextra ./src/internal/alloc.c ./test/test_alloc.c -o src/build/test_alloc || { echo "Compile test_alloc failed"; exit 21; }
-          echo "Built target test_alloc"
+        run: cmake --build build
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure

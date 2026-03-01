@@ -55,13 +55,13 @@ Do the installation processes for all 3 (should be simple enough)
 * ⁠Similar to openocd/cmake, you may have to add  to PATH env variable for ArmGNUToolchain. I think it should be path of ⁠ C:\ArmGNUToolchain\14.3.rel1\arm-none-eabi\bin⁠, but may be wrong
 
 ## Compiling
-The easiest way to compile will be using the provided ```./build.sh``` file. First you should make a folder in ```./src/build/``` if it does not exist already. You can input a target to make, such as ```titan```, e.g. ```./build.sh titan``` would compile the program with the main loop. Alternatively you could do ```./build.sh all``` to make all targets.
-* Internally, what this does is temporarily do ```cd src/build```, then ```cmake ..```, and then ```make```ing each target. It also compiles the test_alloc executable separately. 
+The easiest way to compile will be using the provided ```./build.sh``` file. First you should make a folder in ```./build/``` if it does not exist already. You can input a target to make, such as ```titan```, e.g. ```./build.sh titan``` would compile the program with the main loop. Alternatively you could do ```./build.sh all``` to make all targets.
+* Internally, what this does is temporarily do ```cd build```, then ```cmake ..```, and then ```make```ing each target. It also compiles the test_alloc executable separately. 
 
 If you build a specific target, it will also try to flash to devboard. You may have to unplug/replug the STM32 devboard due to having to wipe flash memory.
 * This is a reason I am considering Docker, as STM32 devboard has a CLI that allows for automating that, but it is not available on MacOS.
 
-You can also do ```./build.sh clean``` to remove all ```src/build``` files, if needed.
+You can also do ```./build.sh clean``` to remove all ```build``` files, if needed.
 
 ### Committing
 * You should be passing the ```./build.sh commit_check``` check before committing/opening a PR.

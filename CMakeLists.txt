@@ -34,10 +34,6 @@ set(CMAKE_SIZE ${TOOLCHAIN_PREFIX}size)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # set(CMAKE_POSITION_INDEPENDENT_CODE ON) 
 
-# proj dirs
-
-
-
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
@@ -46,20 +42,20 @@ project(titan C ASM)
 enable_testing()
 
 set(COMMON_SOURCES
-  ${CMAKE_SOURCE_DIR}/internal/startup.c
-  ${CMAKE_SOURCE_DIR}/internal/interrupt.c
-  ${CMAKE_SOURCE_DIR}/internal/vtable.c
-  ${CMAKE_SOURCE_DIR}/internal/mmio.c
-  ${CMAKE_SOURCE_DIR}/internal/alloc.c
-  ${CMAKE_SOURCE_DIR}/peripheral/gpio.c
-  ${CMAKE_SOURCE_DIR}/peripheral/watchdog.c
-  ${CMAKE_SOURCE_DIR}/peripheral/pwm.c
-  ${CMAKE_SOURCE_DIR}/peripheral/uart.c
-  ${CMAKE_SOURCE_DIR}/peripheral/dma.c
-  ${CMAKE_SOURCE_DIR}/peripheral/spi.c
-  ${CMAKE_SOURCE_DIR}/devices/actuator.c
-  ${CMAKE_SOURCE_DIR}/devices/radio.c
-  ${CMAKE_SOURCE_DIR}/devices/barometer.c
+  ${CMAKE_SOURCE_DIR}/src/internal/startup.c
+  ${CMAKE_SOURCE_DIR}/src/internal/interrupt.c
+  ${CMAKE_SOURCE_DIR}/src/internal/vtable.c
+  ${CMAKE_SOURCE_DIR}/src/internal/mmio.c
+  ${CMAKE_SOURCE_DIR}/src/internal/alloc.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/gpio.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/watchdog.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/pwm.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/uart.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/dma.c
+  ${CMAKE_SOURCE_DIR}/src/peripheral/spi.c
+  ${CMAKE_SOURCE_DIR}/src/devices/actuator.c
+  ${CMAKE_SOURCE_DIR}/src/devices/radio.c
+  ${CMAKE_SOURCE_DIR}/src/devices/barometer.c
 )
 
 function(add_firmware_target target_name entry_file)
@@ -69,8 +65,8 @@ function(add_firmware_target target_name entry_file)
   )
 
   target_include_directories(${target_name}.elf PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/..
   )
 
   target_compile_options(${target_name}.elf PRIVATE
@@ -87,7 +83,7 @@ function(add_firmware_target target_name entry_file)
 
   target_link_options(${target_name}.elf PRIVATE
     -nostdlib
-    -T ${CMAKE_SOURCE_DIR}/internal/linker.ld
+    -T ${CMAKE_SOURCE_DIR}/src/internal/linker.ld
     # -mtext-section-literals # added for linker issues
     -mcpu=cortex-m7
     -mthumb
@@ -102,8 +98,24 @@ function(add_firmware_target target_name entry_file)
   )
 endfunction()
 
-add_firmware_target(titan ${CMAKE_SOURCE_DIR}/main.c)
-add_firmware_target(test_pwm ${CMAKE_SOURCE_DIR}/../test/test_pwm.c)
-add_firmware_target(test_spi ${CMAKE_SOURCE_DIR}/../test/test_spi.c)
-add_firmware_target(test_usart ${CMAKE_SOURCE_DIR}/../test/test_usart.c)
-add_firmware_target(test_oscilloscope ${CMAKE_SOURCE_DIR}/../test/test_oscilloscope.c)
+add_firmware_target(titan ${CMAKE_SOURCE_DIR}/src/main.c)
+add_firmware_target(test_pwm ${CMAKE_SOURCE_DIR}/test/test_pwm.c)
+add_firmware_target(test_spi ${CMAKE_SOURCE_DIR}/test/test_spi.c)
+add_firmware_target(test_usart ${CMAKE_SOURCE_DIR}/test/test_usart.c)
+add_firmware_target(test_oscilloscope ${CMAKE_SOURCE_DIR}/test/test_oscilloscope.c)
+
+# Native host unit test: test_alloc (compiled with system gcc, not the ARM cross-compiler)
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/test_alloc
+  COMMAND gcc -std=c18 -Wall -Wextra
+    ${CMAKE_SOURCE_DIR}/src/internal/alloc.c
+    ${CMAKE_SOURCE_DIR}/test/test_alloc.c
+    -o ${CMAKE_BINARY_DIR}/test_alloc
+  DEPENDS
+    ${CMAKE_SOURCE_DIR}/src/internal/alloc.c
+    ${CMAKE_SOURCE_DIR}/test/test_alloc.c
+    ${CMAKE_SOURCE_DIR}/src/internal/alloc.h
+  COMMENT "Building native host test: test_alloc"
+)
+add_custom_target(test_alloc_target ALL DEPENDS ${CMAKE_BINARY_DIR}/test_alloc)
+add_test(NAME test_alloc COMMAND ${CMAKE_BINARY_DIR}/test_alloc)
