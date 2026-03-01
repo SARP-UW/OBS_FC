@@ -135,18 +135,6 @@ enum ti_errc_t actuator_init(actuator_t *dev, const actuator_config_t *config);
 enum ti_errc_t actuator_set_enable(actuator_t *dev, bool enable);
 
 /**
- * @brief Write a 16-bit value to a register address.
- */
-enum ti_errc_t actuator_write_reg(actuator_t *dev, uint8_t addr,
-                                 uint16_t value, uint8_t *status_out);
-
-/**
- * @brief Read a 16-bit value from a register address.
- */
-enum ti_errc_t actuator_read_reg(actuator_t *dev, uint8_t addr,
-                                uint16_t *value, uint8_t *status_out);
-
-/**
  * @brief Set ACTIVE bit in `GLOBAL_CFG`.
  */
 enum ti_errc_t actuator_set_active(actuator_t *dev, bool active);

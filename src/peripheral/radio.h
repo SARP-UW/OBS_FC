@@ -85,46 +85,51 @@ typedef struct {
  * @section Function Definitions
  **************************************************************************************************/
 
+/**
+ * @brief Initialize a radio device instance.
+ *
+ * Configures SPI, GPIO pins, resets the device, applies optional patches
+ * and configuration commands.  See radio_config_t for available options.
+ */
 enum ti_errc_t radio_init(radio_t *dev, const radio_config_t *config);
 
+/**
+ * @brief Toggle the hardware reset line and re-apply errata workarounds.
+ */
 enum ti_errc_t radio_reset(radio_t *dev);
 
-enum ti_errc_t radio_apply_cmds(radio_t *dev, const radio_cmd_t *cmds,
-                               size_t count);
+/**
+ * @brief Transmit a single packet.
+ *
+ * Clears the TX FIFO, writes @p data, starts TX on the device channel,
+ * then re-enters RX mode.  Mirrors the transmit flow in radio.py.
+ *
+ * @param data  Pointer to packet bytes.
+ * @param len   Number of bytes (1..RADIO_MAX_PACKET_SIZE).
+ */
+enum ti_errc_t radio_transmit(radio_t *dev, const uint8_t *data, size_t len);
 
-enum ti_errc_t radio_send_cmd(radio_t *dev, const uint8_t *cmd, size_t len);
+/**
+ * @brief Receive a single packet.
+ *
+ * Reads the packet length via PACKET_INFO, then reads that many bytes
+ * from the RX FIFO.  Mirrors the receive flow in radio.py.
+ *
+ * @param data       Output buffer (must hold at least @p max_len bytes).
+ * @param max_len    Maximum bytes to read.
+ * @param actual_len Set to the number of bytes actually received.
+ */
+enum ti_errc_t radio_receive(radio_t *dev, uint8_t *data, size_t max_len,
+                             size_t *actual_len);
 
-enum ti_errc_t radio_send_cmd_get_resp(radio_t *dev, const uint8_t *cmd,
-                                      size_t cmd_len, uint8_t *resp,
-                                      size_t resp_len);
-
-enum ti_errc_t radio_upload_patch(radio_t *dev, const uint8_t *patch_data,
-                                 size_t patch_len);
-
-enum ti_errc_t radio_write_tx_fifo(radio_t *dev, const uint8_t *data,
-                                  size_t len);
-
-enum ti_errc_t radio_read_rx_fifo(radio_t *dev, uint8_t *data, size_t len);
-
-enum ti_errc_t radio_start_tx(radio_t *dev, uint8_t channel, uint8_t condition,
-                             uint16_t length, uint16_t tx_delay);
-
-enum ti_errc_t radio_start_rx(radio_t *dev, uint8_t channel,
-                             const uint8_t *args, size_t args_len);
-
-enum ti_errc_t radio_change_state(radio_t *dev, uint8_t next_state);
-
-enum ti_errc_t radio_read_frr(radio_t *dev, uint8_t frr_index,
-                             uint8_t *value);
-
+/**
+ * @brief Read and clear the chip interrupt status registers.
+ */
 enum ti_errc_t radio_get_int_status(radio_t *dev, uint8_t *ph_status,
                                    uint8_t *modem_status,
                                    uint8_t *chip_status);
 
-enum ti_errc_t radio_fifo_info(radio_t *dev, uint8_t arg, uint8_t *resp,
-                              size_t resp_len);
-
-enum ti_errc_t radio_get_packet_info(radio_t *dev, uint8_t *resp,
-                                    size_t resp_len);
-
+/**
+ * @brief Return true when the NIRQ pin is asserted (active-low).
+ */
 bool radio_nirq_asserted(radio_t *dev);

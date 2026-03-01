@@ -46,6 +46,12 @@
 #define ACTUATOR_IMONITOR_CH2    0x57
 #define ACTUATOR_IMONITOR_CH3    0x60
 
+// Forward declarations for internal register helpers (not exposed in header).
+static enum ti_errc_t actuator_write_reg(actuator_t *dev, uint8_t addr,
+                                         uint16_t value, uint8_t *status_out);
+static enum ti_errc_t actuator_read_reg(actuator_t *dev, uint8_t addr,
+                                        uint16_t *value, uint8_t *status_out);
+
 // Validate channel enum is within device range.
 static inline bool actuator_channel_valid(actuator_channel_t channel) {
   return channel >= ACTUATOR_CHANNEL_0 && channel < ACTUATOR_CHANNEL_COUNT;
@@ -203,13 +209,13 @@ enum ti_errc_t actuator_set_enable(actuator_t *dev, bool enable) {
 }
 
 // Write a 16-bit register; optional status byte out.
-enum ti_errc_t actuator_write_reg(actuator_t *dev, uint8_t addr,
+static enum ti_errc_t actuator_write_reg(actuator_t *dev, uint8_t addr,
                                  uint16_t value, uint8_t *status_out) {
   return actuator_spi_transfer(dev, addr, true, value, NULL, status_out);
 }
 
 // Read a 16-bit register; performs a dummy read then a capture read.
-enum ti_errc_t actuator_read_reg(actuator_t *dev, uint8_t addr,
+static enum ti_errc_t actuator_read_reg(actuator_t *dev, uint8_t addr,
                                 uint16_t *value, uint8_t *status_out) {
   enum ti_errc_t errc = actuator_spi_transfer(dev, addr, false,
                                               ACTUATOR_SPI_DUMMY_DATA, NULL,

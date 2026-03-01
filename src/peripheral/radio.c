@@ -35,6 +35,35 @@
 
 static const uint8_t radio_errata12_cmd[] = {0xF1, 0x47, 0x4B, 0x00};
 
+// TX/RX configuration defaults (matching radio.py).
+#define RADIO_FIFO_RESET_TX   0x01
+#define RADIO_TX_CONDITION    0x03  // Ready after TX, start immediately
+static const uint8_t radio_rx_default_args[] = {0x00, 0x00, 0x08, 0x08, 0x08};
+
+// Forward declarations for internal helpers (not exposed in header).
+static enum ti_errc_t radio_send_cmd(radio_t *dev, const uint8_t *cmd, size_t len);
+static enum ti_errc_t radio_send_cmd_get_resp(radio_t *dev, const uint8_t *cmd,
+                                              size_t cmd_len, uint8_t *resp,
+                                              size_t resp_len);
+static enum ti_errc_t radio_apply_cmds(radio_t *dev, const radio_cmd_t *cmds,
+                                       size_t count);
+static enum ti_errc_t radio_upload_patch(radio_t *dev, const uint8_t *patch_data,
+                                         size_t patch_len);
+static enum ti_errc_t radio_change_state(radio_t *dev, uint8_t next_state);
+static enum ti_errc_t radio_write_tx_fifo(radio_t *dev, const uint8_t *data,
+                                          size_t len);
+static enum ti_errc_t radio_read_rx_fifo(radio_t *dev, uint8_t *data, size_t len);
+static enum ti_errc_t radio_start_tx(radio_t *dev, uint8_t channel, uint8_t condition,
+                                     uint16_t length, uint16_t tx_delay);
+static enum ti_errc_t radio_start_rx(radio_t *dev, uint8_t channel,
+                                     const uint8_t *args, size_t args_len);
+static enum ti_errc_t radio_read_frr(radio_t *dev, uint8_t frr_index,
+                                     uint8_t *value);
+static enum ti_errc_t radio_fifo_info(radio_t *dev, uint8_t arg, uint8_t *resp,
+                                      size_t resp_len);
+static enum ti_errc_t radio_get_packet_info(radio_t *dev, uint8_t *resp,
+                                            size_t resp_len);
+
 /**************************************************************************************************
  * @section Private Helpers
  **************************************************************************************************/
@@ -278,7 +307,7 @@ enum ti_errc_t radio_reset(radio_t *dev) {
   return TI_ERRC_NONE;
 }
 
-enum ti_errc_t radio_apply_cmds(radio_t *dev, const radio_cmd_t *cmds,
+static enum ti_errc_t radio_apply_cmds(radio_t *dev, const radio_cmd_t *cmds,
                                size_t count) {
   if (dev == NULL || cmds == NULL) {
     return TI_ERRC_INVALID_ARG;
@@ -301,7 +330,7 @@ enum ti_errc_t radio_apply_cmds(radio_t *dev, const radio_cmd_t *cmds,
   return TI_ERRC_NONE;
 }
 
-enum ti_errc_t radio_send_cmd(radio_t *dev, const uint8_t *cmd, size_t len) {
+static enum ti_errc_t radio_send_cmd(radio_t *dev, const uint8_t *cmd, size_t len) {
   if (dev == NULL || cmd == NULL || len == 0) {
     return TI_ERRC_INVALID_ARG;
   }
@@ -314,7 +343,7 @@ enum ti_errc_t radio_send_cmd(radio_t *dev, const uint8_t *cmd, size_t len) {
   return radio_spi_transfer(dev, cmd, rx, len);
 }
 
-enum ti_errc_t radio_send_cmd_get_resp(radio_t *dev, const uint8_t *cmd,
+static enum ti_errc_t radio_send_cmd_get_resp(radio_t *dev, const uint8_t *cmd,
                                       size_t cmd_len, uint8_t *resp,
                                       size_t resp_len) {
   if (dev == NULL || cmd == NULL || cmd_len == 0) {
@@ -350,7 +379,7 @@ enum ti_errc_t radio_send_cmd_get_resp(radio_t *dev, const uint8_t *cmd,
   return TI_ERRC_NONE;
 }
 
-enum ti_errc_t radio_upload_patch(radio_t *dev, const uint8_t *patch_data,
+static enum ti_errc_t radio_upload_patch(radio_t *dev, const uint8_t *patch_data,
                                  size_t patch_len) {
   if (dev == NULL || patch_data == NULL || patch_len == 0) {
     return TI_ERRC_INVALID_ARG;
@@ -386,7 +415,7 @@ enum ti_errc_t radio_upload_patch(radio_t *dev, const uint8_t *patch_data,
   return TI_ERRC_NONE;
 }
 
-enum ti_errc_t radio_write_tx_fifo(radio_t *dev, const uint8_t *data,
+static enum ti_errc_t radio_write_tx_fifo(radio_t *dev, const uint8_t *data,
                                   size_t len) {
   if (dev == NULL || data == NULL || len == 0 || len > RADIO_MAX_PACKET_SIZE) {
     return TI_ERRC_INVALID_ARG;
@@ -402,7 +431,7 @@ enum ti_errc_t radio_write_tx_fifo(radio_t *dev, const uint8_t *data,
   return radio_spi_transfer(dev, tx, rx, len + 1);
 }
 
-enum ti_errc_t radio_read_rx_fifo(radio_t *dev, uint8_t *data, size_t len) {
+static enum ti_errc_t radio_read_rx_fifo(radio_t *dev, uint8_t *data, size_t len) {
   if (dev == NULL || data == NULL || len == 0 || len > RADIO_MAX_PACKET_SIZE) {
     return TI_ERRC_INVALID_ARG;
   }
@@ -420,7 +449,7 @@ enum ti_errc_t radio_read_rx_fifo(radio_t *dev, uint8_t *data, size_t len) {
 }
 
 
-enum ti_errc_t radio_start_tx(radio_t *dev, uint8_t channel, uint8_t condition,
+static enum ti_errc_t radio_start_tx(radio_t *dev, uint8_t channel, uint8_t condition,
                              uint16_t length, uint16_t tx_delay) {
   if (dev == NULL || length > RADIO_MAX_PACKET_SIZE) {
     return TI_ERRC_INVALID_ARG;
@@ -443,7 +472,7 @@ enum ti_errc_t radio_start_tx(radio_t *dev, uint8_t channel, uint8_t condition,
   return radio_wait_cts(dev);
 }
 
-enum ti_errc_t radio_start_rx(radio_t *dev, uint8_t channel,
+static enum ti_errc_t radio_start_rx(radio_t *dev, uint8_t channel,
                              const uint8_t *args, size_t args_len) {
   if (dev == NULL || (args_len > 0 && args == NULL)) {
     return TI_ERRC_INVALID_ARG;
@@ -470,7 +499,7 @@ enum ti_errc_t radio_start_rx(radio_t *dev, uint8_t channel,
   return radio_wait_cts(dev);
 }
 
-enum ti_errc_t radio_change_state(radio_t *dev, uint8_t next_state) {
+static enum ti_errc_t radio_change_state(radio_t *dev, uint8_t next_state) {
   if (dev == NULL) {
     return TI_ERRC_INVALID_ARG;
   }
@@ -484,7 +513,7 @@ enum ti_errc_t radio_change_state(radio_t *dev, uint8_t next_state) {
   return radio_wait_cts(dev);
 }
 
-enum ti_errc_t radio_read_frr(radio_t *dev, uint8_t frr_index,
+static enum ti_errc_t radio_read_frr(radio_t *dev, uint8_t frr_index,
                              uint8_t *value) {
   if (dev == NULL || value == NULL) {
     return TI_ERRC_INVALID_ARG;
@@ -549,7 +578,7 @@ enum ti_errc_t radio_get_int_status(radio_t *dev, uint8_t *ph_status,
   return TI_ERRC_NONE;
 }
 
-enum ti_errc_t radio_fifo_info(radio_t *dev, uint8_t arg, uint8_t *resp,
+static enum ti_errc_t radio_fifo_info(radio_t *dev, uint8_t arg, uint8_t *resp,
                               size_t resp_len) {
   if (dev == NULL) {
     return TI_ERRC_INVALID_ARG;
@@ -559,7 +588,7 @@ enum ti_errc_t radio_fifo_info(radio_t *dev, uint8_t arg, uint8_t *resp,
   return radio_send_cmd_get_resp(dev, cmd, sizeof(cmd), resp, resp_len);
 }
 
-enum ti_errc_t radio_get_packet_info(radio_t *dev, uint8_t *resp,
+static enum ti_errc_t radio_get_packet_info(radio_t *dev, uint8_t *resp,
                                     size_t resp_len) {
   if (dev == NULL) {
     return TI_ERRC_INVALID_ARG;
@@ -575,4 +604,65 @@ bool radio_nirq_asserted(radio_t *dev) {
   }
 
   return !tal_read_pin(dev->nirq_pin);
+}
+
+enum ti_errc_t radio_transmit(radio_t *dev, const uint8_t *data, size_t len) {
+  if (dev == NULL || data == NULL || len == 0 || len > RADIO_MAX_PACKET_SIZE) {
+    return TI_ERRC_INVALID_ARG;
+  }
+
+  // Clear TX FIFO before writing new packet data.
+  enum ti_errc_t errc = radio_fifo_info(dev, RADIO_FIFO_RESET_TX, NULL, 0);
+  if (errc != TI_ERRC_NONE) {
+    return errc;
+  }
+
+  // Write packet into TX FIFO.
+  errc = radio_write_tx_fifo(dev, data, len);
+  if (errc != TI_ERRC_NONE) {
+    return errc;
+  }
+
+  // Begin transmission on the device channel.
+  errc = radio_start_tx(dev, dev->channel, RADIO_TX_CONDITION,
+                        (uint16_t)len, 0);
+  if (errc != TI_ERRC_NONE) {
+    return errc;
+  }
+
+  // Re-enter RX mode so we can receive packets again.
+  return radio_start_rx(dev, dev->channel, radio_rx_default_args,
+                        sizeof(radio_rx_default_args));
+}
+
+enum ti_errc_t radio_receive(radio_t *dev, uint8_t *data, size_t max_len,
+                             size_t *actual_len) {
+  if (dev == NULL || data == NULL || actual_len == NULL || max_len == 0) {
+    return TI_ERRC_INVALID_ARG;
+  }
+
+  // Query packet length from the radio.
+  uint8_t pkt_resp[2] = {0};
+  enum ti_errc_t errc = radio_get_packet_info(dev, pkt_resp, sizeof(pkt_resp));
+  if (errc != TI_ERRC_NONE) {
+    return errc;
+  }
+
+  size_t pkt_len = (size_t)((pkt_resp[0] << 8) | pkt_resp[1]);
+  if (pkt_len == 0) {
+    *actual_len = 0;
+    return TI_ERRC_NONE;
+  }
+  if (pkt_len > max_len) {
+    pkt_len = max_len;
+  }
+
+  // Read packet bytes from RX FIFO.
+  errc = radio_read_rx_fifo(dev, data, pkt_len);
+  if (errc != TI_ERRC_NONE) {
+    return errc;
+  }
+
+  *actual_len = pkt_len;
+  return TI_ERRC_NONE;
 }
