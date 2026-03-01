@@ -4,12 +4,7 @@
 #include "errc.h"
 #include "qspi.h"
 
-// Single-chip quadspi driver using flash 1 pins.
-// This driver uses blocking. This may be problematic, as some
-// flash operations can take a long time. It will likely be best to
-// update this to use interrupts instead.
-
-ti_errc_t qspi_init() {
+void qspi_init() {
     // Enable RHB3 clock and reset QSPI
     SET_FIELD(RCC_AHB3ENR, RCC_AHB3ENR_QSPIEN);
     SET_FIELD(RCC_AHB3RSTR, RCC_AHB3RSTR_QSPIRST);
@@ -53,92 +48,99 @@ ti_errc_t qspi_init() {
     WRITE_FIELD(GPIOx_OSPEEDR[3], GPIOx_OSPEEDR_OSPEEDx[13], 0b11);  // Set to very high speed
 
     // Device Configuration
-    WRITE_FIELD(QUADSPI_CR, QUADSPI_CR_PRESCALER, 2U); // TODO: Find the kernel clock speed and find out what factor it needs to be divided by
-    SET_FIELD(QUADSPI_CR, QUADSPI_CR_SSHIFT);          // This seems to add some extra stability
-    WRITE_FIELD(QUADSPI_CR, QUADSPI_CR_FTHRES, 3U);    // Raises the FIFO threshold flag when FIFO contains three bytes
-    CLR_FIELD(QUADSPI_CR, QUADSPI_CR_DFM);             // Duel-flash mode disabled (this is assuming that we're not using two external memories)
+    WRITE_FIELD(QUADSPI_CR, QUADSPI_CR_PRESCALER, 2U); // TODO: Find what factor the kernel clock speed needs to be divided by
+    SET_FIELD(QUADSPI_CR, QUADSPI_CR_SSHIFT);          // This seems to add some extra stability at high speeds (waits extra half-cycle to sample data)
+    WRITE_FIELD(QUADSPI_CR, QUADSPI_CR_FTHRES, 3U);    // Raises the FIFO threshold flag when FIFO contains four bytes (N + 1)
+    CLR_FIELD(QUADSPI_CR, QUADSPI_CR_DFM);             // Duel-flash mode disabled
     CLR_FIELD(QUADSPI_CR, QUADSPI_CR_FSEL);            // FLASH 1 selected
 
-    WRITE_FIELD(QUADSPI_DCR, QUADSPI_DCR_FSIZE, 23U);  // TODO: Find the number of bytes in MB your chip has and write n to this register, where n is 2^n = chip bytes (MB)
+    WRITE_FIELD(QUADSPI_DCR, QUADSPI_DCR_FSIZE, 23U);  // TODO: Find the number of bytes in MB your external chip has and write n to this register, where n is 2^n = chip bytes (MB)
     WRITE_FIELD(QUADSPI_DCR, QUADSPI_DCR_CSHT, 3U);     // Defines the minimum number of cycles chip select must remain high
     CLR_FIELD(QUADSPI_DCR, QUADSPI_DCR_CKMODE);         // CLK must stay low when NCS is high
 
     SET_FIELD(QUADSPI_CR, QUADSPI_CR_EN);               // Enable quadspi
-
-    return TI_ERRC_NONE; // TODO: Add error checks or return something else
 }
 
-ti_errc_t qspi_command(qspi_cmd_t *cmd, uint8_t *buf, bool is_read) {
-    // Ensure that qspi is not busy
+enum ti_errc_t qspi_command_blk(qspi_cmd_t *cmd, uint8_t *buf, bool is_read) {
     if (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)) return TI_ERRC_BUSY;
 
-    // Specify the data size
-    WRITE_FIELD(QUADSPI_DLR, QUADSPI_DLR_DL, cmd->data_size - 1);
+    if (cmd->data_size > 0) {
+        WRITE_FIELD(QUADSPI_DLR, QUADSPI_DLR_DL, cmd->data_size - 1);
+    }
 
-    // Write to the Communication Control Register (QUADSPI_CCR)
-    uint32_t fmode = is_read ? 0b01 : 0b00;            // 01 for Read, 00 for Write
+    uint32_t fmode = is_read ? 0b01 : 0b00;             
 
     uint32_t ccr_val = (fmode << 26)                |  // Combine all QUADSPI_CCR fields into one 32-bit value
                        (cmd->data_mode << 24)       |  // ----------------------------------------------------
-                       (cmd->dummy_cycles << 18)    |  // The command sequence begins as soon as we write to
+                       (cmd->dummy_cycles << 18)    |  // The command sequence begins as soon as you write to 
                        (cmd->address_size << 12 )   |  // the QUADSPI_CCR register. Therefore, it is important
                        (cmd->address_mode << 10)    |  // to perform just one write operation.
-                       (cmd->instruction_mode << 8) |
+                       (cmd->instruction_mode << 8) |  
                        (cmd->instruction);
 
-    WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val); // Write to CCR
+    // Write to CCR
+    WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val);
 
     // If necessary, specify the address to be sent to external memory
-    if (cmd->address_mode != 0b00) WRITE_FIELD(QUADSPI_AR, QUADSPI_AR_REG, cmd->address);
+    if (cmd->address_mode != 0b00) {
+        WRITE_FIELD(QUADSPI_AR, QUADSPI_AR_REG, cmd->address);
+    }
 
-    // Run main data loop to fill/depleat the data we want to read/send
+    // Run main data loop
     for (uint32_t i = 0; i < cmd->data_size; i++) {
         if (is_read) {
-            while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_FLEVEL) == 0 && // Wait for FLEVEL or TCF flag
-                   READ_FIELD(QUADSPI_SR, QUADSPI_SR_TCF) == 0);
-            buf[i] = (uint8_t)READ_FIELD(QUADSPI_DR, QUADSPI_DR_REG); // Read from the data register
-        } else {
-            while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_FLEVEL) >= 32);  //Wait for FLEVEL flag
-            WRITE_FIELD(QUADSPI_DR, QUADSPI_DR_REG, buf[i]);          // Write to data register
+            while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_FLEVEL) == 0);
+            
+            buf[i] = (uint8_t)READ_FIELD(QUADSPI_DR, QUADSPI_DR_REG); 
+        } else { // (is_write)
+            while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_FLEVEL) >= 32);  
+            
+            WRITE_FIELD(QUADSPI_DR, QUADSPI_DR_REG, buf[i]);          
         }
     }
 
-    // Wait for busy flag to be clear, then reset the FIFO threshold flag (FTF)
-    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_TCF) == 0);
-    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY) != 0);
-    WRITE_WOFIELD(QUADSPI_FCR, QUADSPI_FCR_CTCF, 1U);
-    WRITE_WOFIELD(QUADSPI_FCR, QUADSPI_FCR_CTEF, 1U);
+    // Wait for the busy flag and transfer complete flag
+    while (!READ_FIELD(QUADSPI_SR, QUADSPI_SR_TCF));  
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY));  
+    
+    WRITE_WO_FIELD(QUADSPI_FCR, QUADSPI_FCR_CTCF, 1U); 
+    WRITE_WO_FIELD(QUADSPI_FCR, QUADSPI_FCR_CTEF, 1U); 
 
     return TI_ERRC_NONE;
 }
 
-ti_errc_t qspi_poll_status_blk() {
-    // Set match and mask values to check busy bit
-    WRITE_FIELD(QUADSPI_PSMAR, QUADSPI_PSMAR_REG, 0x00); // Set match value
-    WRITE_FIELD(QUADSPI_PSMKR, QUADSPI_PSMKR_REG, 0x01); // Set mask value
+enum ti_errc_t qspi_poll_status_blk() {
+    // Stop automatic polling mode after a match
+    SET_FIELD(QUADSPI_CR, QUADSPI_CR_APMS);
 
-    // Set polling interval: how often QSPI is pulling the CS line low to "check-in" with flash
-    WRITE_FIELD(QUADSPI_PIR, QUADSPI_PIR_INTERVAL, 32U); // Wait 32 cycles per "check-in"
+    // Look for internal busy bit to be zero
+    WRITE_FIELD(QUADSPI_PSMAR, QUADSPI_PSMAR_REG, 0x00); 
+    WRITE_FIELD(QUADSPI_PSMKR, QUADSPI_PSMKR_REG, 0x01); 
+    WRITE_FIELD(QUADSPI_PIR, QUADSPI_PIR_INTERVAL, 32U); 
 
     uint32_t ccr_val = (0b10 << 26)             | // Set FMODE to 0b10 for automatic polling mode
-                       (QSPI_MODE_QUAD << 24)   | // Data uses all four qspi lines                 // TODO: Double check that this is correct for polling mode
+                       (QSPI_MODE_QUAD << 24)   | // Data uses all four qspi lines                
                        (0U << 18)               | // No dummy bytes
                        (QSPI_MODE_NONE << 10)   | // No address phase
                        (QSPI_MODE_SINGLE << 8)  | // Instruction over single qspi line
-                       (0x05);                    // Read status register instruction
+                       (0x05);                    // Read status register instruction                   
 
-    WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val); // Write to all important fields at once
+    // Write to CCR
+    WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val); 
 
-    // Wait for the hardware match-flag
-    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_SMF) == 0);
+    // Wait for the hardware match-flag (keeps polling until flag is raised)
+    while (!READ_FIELD(QUADSPI_SR, QUADSPI_SR_SMF));
 
-    WRITE_WOFIELD(QUADSPI_FCR, QUADSPI_FCR_CSMF, 1U); // Clear SMF
-    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY) != 0); // Wait until not busy
+    WRITE_WO_FIELD(QUADSPI_FCR, QUADSPI_FCR_CSMF, 1U); 
+    
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)); 
+    
+    CLR_FIELD(QUADSPI_CR, QUADSPI_CR_APMS);
 
     return TI_ERRC_NONE;
 }
 
-ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd) {
+enum ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd) {
     // Ensure the QSPI is not busy
     while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY));
 
@@ -153,26 +155,17 @@ ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd) {
         (0x0B);                      // Instruction: Fast Read
 
     WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val);
+
+    return TI_ERRC_NONE;
 }
 
-ti_errc_t qspi_exit_memory_mapped() {
+enum ti_errc_t qspi_exit_memory_mapped() {
     // Abort any ongoing memory-mapped access
-    SET_BIT(QUADSPI_CR, QUADSPI_CR_ABORT);
+    SET_FIELD(QUADSPI_CR, QUADSPI_CR_ABORT);
 
-    while (READ_BIT(QUADSPI_CR, QUADSPI_CR_ABORT)); // Wait for the abort to complete
-    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)); // Wait for the busy flag to clear
+    // Wait for busy and abort flags
+    while (READ_FIELD(QUADSPI_CR, QUADSPI_CR_ABORT)); 
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)); 
+
+    return TI_ERRC_NONE;
 }
-
-/**
- * TODO:
- * 1. Create a timeout system for your while loops that check the status register.
- *    You could set a timeout value (number of ticks), the subtract from it each time through the while loop.
- *    When the timeout variable reaches zero, you return an error code. See if there is a better way to do this
- *    before implementing.
- *
- * 3. Double check the main data loop of qspi_command. Even with timeouts, I'm worried that it's an inefficient and
- *    time consuming way to send data.
- *
- * 4. Double check what actually needs to be put into the CCR for each mode.
- *
- */

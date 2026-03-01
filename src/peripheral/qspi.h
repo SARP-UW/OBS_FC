@@ -33,12 +33,6 @@
  /**
  * @brief Deines the number of data lines being used for
  * a transaction.
- *
- * Includes:
- * - QSPI_MODE_NONE
- * - QSPI_MODE_SINGLE
- * - QSPI_MODE_DUAL
- * - QSPI_MODE_QUAD
  */
 typedef enum {
     QSPI_MODE_NONE,
@@ -67,10 +61,8 @@ typedef struct {
 
 /**
  * @brief Initializes the Quad SPI peripheral.
- *
- * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
  */
-ti_errc_t qspi_init();
+void qspi_init();
 
 /**
  * @brief sends a command to flash memory (read or write). Use qspi_poll_status_blk();
@@ -82,18 +74,18 @@ ti_errc_t qspi_init();
  * @param buf pointer to an array of eight bit integer data in memory
  * @param is_read specifies whether you want to read or write. If you want to read, set
  * is_read to true.
- * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
+ * @return an error code -- TI_ERRC_NONE if no error occurs 
  */
-ti_errc_t qspi_command(qspi_cmd_t *cmd, uint8_t *buf, bool is_read);
+enum ti_errc_t qspi_command_blk(qspi_cmd_t *cmd, uint8_t *buf, bool is_read);
 
 /**
  * @brief status polling mode ensures that the flash memory chip is not busy.
  * This function should be used in junction with qspi_command(). If qspi_command is
  * being called repeatedly, qspi_poll_status_blk() should be called in between each command.
  *
- * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
+ * @return an error code -- TI_ERRC_NONE if no error occurs 
  */
-ti_errc_t qspi_poll_status_blk();
+enum ti_errc_t qspi_poll_status_blk();
 
 /**
  * @brief entering memory mapped mode enables the CPU to treat flash memory as if it were
@@ -101,15 +93,15 @@ ti_errc_t qspi_poll_status_blk();
  * wish to do so, exit memory mapped mode first.
  *
  * @param cmd pointer to the qspi_cmd_t structure
- * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
+ * @return an error code -- TI_ERRC_NONE if no error occurs 
  */
-ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd);
+enum ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd);
 
 /**
  * @brief exiting memory mapped mode will disallow the CPU from using flash memory
  * as if it were internal memory. However, it enables the user to use qspi in indirect mode --
  * giving them the ability to read and write to external memory through qspi_command().
  *
- * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
+ * @return an error code -- TI_ERRC_NONE if no error occurs 
  */
-ti_errc_t qspi_exit_memory_mapped();
+enum ti_errc_t qspi_exit_memory_mapped();

@@ -1268,6 +1268,12 @@ extern const field32_t QUADSPI_CCR_FMODE;       /** @brief Functional mode this 
 extern const field32_t QUADSPI_CCR_SIOO;        /** @brief Send instruction only once mode see section15.3.11: sending the instruction only once on page13. This bit has no effect when IMODE = 00. This field can be written only when BUSY = 0. */
 extern const field32_t QUADSPI_CCR_DHHC;        /** @brief DDR hold delay the data output by 1/4 of the QUADSPI output clock cycle in DDR mode: this feature is only active in DDR mode. This field can be written only when BUSY = 0. */
 extern const field32_t QUADSPI_CCR_DDRM;        /** @brief Double data rate mode this bit sets the DDR mode for the address, alternate byte and data phase: this field can be written only when BUSY = 0. */
+extern const field32_t QUADSPI_PSMKR_REG; 
+extern const field32_t QUADSPI_PSMAR_REG; 
+extern const field32_t QUADSPI_DR_REG; 
+extern const field32_t QUADSPI_AR_REG; 
+extern const field32_t QUADSPI_CCR_REG; 
+extern const field32_t QUADSPI_DLR_DL; 
 extern const field32_t QUADSPI_PIR_INTERVAL;    /** @brief Polling interval number of CLK cycles between to read during automatic polling phases. This field can be written only when BUSY = 0. */
 extern const field32_t QUADSPI_LPTR_TIMEOUT;    /** @brief Timeout period after each access in memory-mapped mode, the QUADSPI prefetches the subsequent bytes and holds these bytes in the FIFO. This field indicates how many CLK cycles the QUADSPI waits after the FIFO becomes full until it raises ncs, putting the flash memory in a lower-consumption state. This field can be written only when BUSY = 0. */
 

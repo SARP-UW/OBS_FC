@@ -2056,6 +2056,12 @@ const field32_t QUADSPI_CCR_FMODE       = {.msk = 0x0C000000U, .pos = 26};
 const field32_t QUADSPI_CCR_SIOO        = {.msk = 0x10000000U, .pos = 28};
 const field32_t QUADSPI_CCR_DHHC        = {.msk = 0x40000000U, .pos = 30};
 const field32_t QUADSPI_CCR_DDRM        = {.msk = 0x80000000U, .pos = 31};
+const field32_t QUADSPI_PSMKR_REG       = {.msk = 0xFFFFFFFFU, .pos = 0};
+const field32_t QUADSPI_PSMAR_REG       = {.msk = 0xFFFFFFFFU, .pos = 0};
+const field32_t QUADSPI_DR_REG          = {.msk = 0xFFFFFFFFU, .pos = 0};
+const field32_t QUADSPI_AR_REG          = {.msk = 0xFFFFFFFFU, .pos = 0};
+const field32_t QUADSPI_CCR_REG         = {.msk = 0xFFFFFFFFU, .pos = 0};
+const field32_t QUADSPI_DLR_DL          = {.msk = 0xFFFFFFFFU, .pos = 0};
 const field32_t QUADSPI_PIR_INTERVAL    = {.msk = 0x0000FFFFU, .pos = 0};
 const field32_t QUADSPI_LPTR_TIMEOUT    = {.msk = 0x0000FFFFU, .pos = 0};
 
