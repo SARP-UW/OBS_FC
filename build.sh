@@ -3,16 +3,47 @@ set -e
 set -o pipefail
 
 FW_TARGET="${1:-${FW_TARGET:-titan}}"
+FW_TARGETS=(titan test_pwm test_spi test_usart test_oscilloscope)
 
 case "$FW_TARGET" in
-  titan|test_pwm|test_spi|test_usart|test_oscilloscope)
+  titan|test_pwm|test_spi|test_usart|test_oscilloscope|commit_check|all)
     ;;
   *)
     echo "Unknown target: $FW_TARGET"
-    echo "Valid targets: titan, test_pwm, test_spi, test_usart, test_oscilloscope"
+    echo "Valid targets: titan, test_pwm, test_spi, test_usart, test_oscilloscope, commit_check, all"
     exit 4
     ;;
 esac
+
+if [ "$FW_TARGET" = "commit_check" ]; then
+  echo "Running local pre-commit check:"
+  cmake -S src -B src/build || { echo "cmake configure failed"; exit 20; }
+
+  cd src/build/ || exit 22
+  for target in "${FW_TARGETS[@]}"; do
+    echo "Building ${target}.elf"
+    make "${target}.elf" || { echo "make failed for ${target}.elf"; exit 21; }
+  done
+  cd ../../
+  gcc -std=c18 -Wall -Wextra ./src/internal/alloc.c ./test/test_alloc.c -o src/build/test_alloc || { echo "Compile test_alloc failed"; exit 21; }
+  echo "Built target test_alloc"
+  echo "Local CMake check passed. Good to go for committing! :D"
+  exit 0
+fi
+
+if [ "$FW_TARGET" = "all" ]; then
+  echo "Running full build (make all):"
+  cmake -S src -B src/build || { echo "cmake configure failed"; exit 20; }
+
+  cd src/build/ || exit 22
+  make all || { echo "make all failed"; exit 21; }
+  cd ../../
+  gcc -std=c18 -Wall -Wextra ./src/internal/alloc.c ./test/test_alloc.c -o src/build/test_alloc || { echo "Compile test_alloc failed"; exit 21; }
+  echo "Built target test_alloc"
+
+  echo "Full build passed."
+  exit 0
+fi
 
 OPENOCD_CMD=(openocd -f interface/stlink.cfg -f target/stm32h7x_dual_bank.cfg -c "program ${FW_TARGET}.elf verify reset exit")
 

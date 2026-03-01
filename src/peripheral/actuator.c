@@ -95,7 +95,8 @@ static enum ti_errc_t actuator_spi_transfer(actuator_t *dev, uint8_t addr,
   tx[2] = (uint8_t)(data_in & 0xFF);
 
   // Execute synchronous transfer.
-  int result = spi_transfer_sync(dev->spi_instance, tx, rx, sizeof(tx));
+  int result = spi_transfer_sync(dev->spi_instance, dev->ss_pin, tx, rx,
+                                 (uint8_t)sizeof(tx));
   if (result != 1) {
     return TI_ERRC_UNKNOWN;
   }
@@ -132,7 +133,8 @@ enum ti_errc_t actuator_init(actuator_t *dev, const actuator_config_t *config) {
     return TI_ERRC_INVALID_ARG;
   }
 
-  if (spi_init(config->spi_instance) != 1)
+  uint8_t ss_list[1] = {config->ss_pin};
+  if (spi_init(config->spi_instance, ss_list, 1) != 1)
     return TI_ERRC_INVALID_ARG;
 
   if (config->has_pwm_config) {
@@ -144,6 +146,7 @@ enum ti_errc_t actuator_init(actuator_t *dev, const actuator_config_t *config) {
 
   // Store configuration locally.
   dev->spi_instance = config->spi_instance;
+  dev->ss_pin = config->ss_pin;
   dev->pwm_config = config->pwm_config;
   dev->has_pwm_config = config->has_pwm_config;
   dev->enable_pin = config->enable_pin;

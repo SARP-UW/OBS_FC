@@ -50,8 +50,8 @@ static enum ti_errc_t radio_spi_transfer(radio_t *dev, const uint8_t *tx,
     return TI_ERRC_INVALID_ARG;
   }
 
-  int result = spi_transfer_sync(dev->spi_instance, (void *)tx, (void *)rx,
-                                (uint8_t)len);
+  int result = spi_transfer_sync(dev->spi_instance, dev->ss_pin, (void *)tx,
+                                 (void *)rx, (uint8_t)len);
   if (result != 1) {
     return TI_ERRC_UNKNOWN;
   }
@@ -124,11 +124,13 @@ enum ti_errc_t radio_init(radio_t *dev, const radio_config_t *config) {
     return TI_ERRC_INVALID_ARG;
   }
 
-  if (spi_init(config->spi_instance) != 1) {
+  uint8_t ss_list[1] = {config->ss_pin};
+  if (spi_init(config->spi_instance, ss_list, 1) != 1) {
     return TI_ERRC_INVALID_ARG;
   }
 
   dev->spi_instance = config->spi_instance;
+  dev->ss_pin = config->ss_pin;
   dev->reset_pin = config->reset_pin;
   dev->nirq_pin = config->nirq_pin;
   dev->reset_active_high = config->reset_active_high;

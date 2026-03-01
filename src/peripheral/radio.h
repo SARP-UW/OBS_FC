@@ -46,6 +46,7 @@ typedef struct {
 
 typedef struct {
   uint8_t spi_instance;
+  uint8_t ss_pin;
   uint8_t reset_pin;
   uint8_t nirq_pin;
   bool reset_active_high;
@@ -69,6 +70,7 @@ typedef struct {
 
 typedef struct {
   uint8_t spi_instance;
+  uint8_t ss_pin;
   uint8_t reset_pin;
   uint8_t nirq_pin;
   bool reset_active_high;

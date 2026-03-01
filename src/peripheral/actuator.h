@@ -72,6 +72,7 @@ typedef enum {
 
 typedef struct {
   uint8_t spi_instance;
+  uint8_t ss_pin;
   struct ti_pwm_config_t pwm_config;
   bool has_pwm_config;
   uint8_t enable_pin;
@@ -84,6 +85,7 @@ typedef struct {
 
 typedef struct {
   uint8_t spi_instance;
+  uint8_t ss_pin;
   struct ti_pwm_config_t pwm_config;
   bool has_pwm_config;
   uint8_t enable_pin;
