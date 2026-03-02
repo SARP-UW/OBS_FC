@@ -142,23 +142,28 @@ typedef enum {
   ACTUATOR_TBLANK_96 = 3,
 } actuator_tblank_t;
 
-/** @brief Actuator configuration. */
+/** @brief SPI config for actuator. */
 typedef struct {
-  uint8_t spi_instance;                /** @brief SPI peripheral instance number. */
-  uint8_t ss_pin;                      /** @brief Slave-select GPIO pin. */
-  struct ti_pwm_config_t pwm_config;   /** @brief Optional PWM output configuration. */
-  bool has_pwm_config;                 /** @brief True if pwm_config is populated. */
-  uint8_t enable_pin;                  /** @brief Hardware enable GPIO pin. */
-  uint8_t fault_pin;                   /** @brief Fault input GPIO pin (active-low). */
-  uint8_t stat0_pin;                   /** @brief Status output 0 GPIO pin. */
-  uint8_t stat1_pin;                   /** @brief Status output 1 GPIO pin. */
-  uint8_t crc_en_pin;                  /** @brief CRC enable GPIO pin. */
-  bool enable_crc;                     /** @brief True to enable SPI CRC checking. */
+  uint8_t spi_inst;                    // SPI peripheral instance (1=SPI1, 2=SPI2, etc.)
+  uint8_t ss_pin;                      // Slave Select GPIO pin — directly from schematic.
+} actuator_spi_t;
+
+/** @brief Actuator configuration — everything except SPI bus identity. */
+typedef struct {
+  struct ti_pwm_config_t pwm_config;   // Optional PWM output configuration.
+  bool has_pwm_config;                 // True if pwm_config is populated.
+  uint8_t enable_pin;                  // Hardware enable GPIO pin — physical kill switch for all H-bridges.
+  uint8_t fault_pin;                   // Fault input GPIO pin (active-low). Directly from MAX22216 nFAULT.
+  uint8_t stat0_pin;                   // Status output 0 GPIO pin.
+  uint8_t stat1_pin;                   // Status output 1 GPIO pin.
+  uint8_t crc_en_pin;                  // CRC enable GPIO pin.
+  bool enable_crc;                     // True to enable SPI CRC checking on transactions.
 } actuator_config_t;
 
-/** @brief Actuator device handle. */
+/** @brief Actuator device handle. Allocate one and pass to all actuator_* functions. */
 typedef struct {
-  actuator_config_t config;            /** @brief Active configuration. */
+  actuator_spi_t spi_config;           // SPI bus + chip select pin for this device.
+  actuator_config_t config;            // Active device configuration.
 } actuator_t;
 
 /** @brief Per-channel solenoid / actuator configuration. */
@@ -190,11 +195,12 @@ typedef struct {
 /**
  * @brief Initializes the MAX22216/MAX22217 actuator and configures SPI and GPIO pins.
  *
- * @param dev     Pointer to the actuator device handle.
- * @param config  Pointer to the actuator configuration.
+ * @param dev        Pointer to the actuator device handle.
+ * @param spi_config Pointer to the SPI configuration (instance + SS pin).
+ * @param config     Pointer to the actuator configuration (GPIO pins, PWM, CRC).
  * @return TI_ERRC_NONE on success, or an appropriate error code on failure.
  */
-enum ti_errc_t actuator_init(actuator_t *dev, const actuator_config_t *config);
+enum ti_errc_t actuator_init(actuator_t *dev, const actuator_spi_t *spi_config, const actuator_config_t *config);
 
 /**
  * @brief Asserts or de-asserts the hardware enable pin.

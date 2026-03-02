@@ -29,20 +29,27 @@
  * @section Type Definitions
  **************************************************************************************************/
 
-/** @brief Radio hardware and channel configuration. */
+/** @brief SPI config for radio. */
 typedef struct {
-  uint8_t spi_instance;      /** @brief SPI peripheral instance number. */
-  uint8_t ss_pin;            /** @brief Slave-select GPIO pin. */
-  uint8_t reset_pin;         /** @brief Reset GPIO pin. */
-  uint8_t nirq_pin;          /** @brief nIRQ (interrupt request) GPIO pin, active-low. */
-  bool reset_active_high;    /** @brief True if reset pin is active-high. */
-  uint8_t channel;           /** @brief Default RF channel number. */
+  uint8_t spi_inst;          // SPI peripheral instance (1=SPI1, 2=SPI2, etc.)
+  uint8_t ss_pin;            // Slave Select GPIO pin — directly from schematic.
+} radio_spi_t;
+
+/** @brief Radio hardware and channel configuration — everything except SPI bus identity. */
+typedef struct {
+  uint8_t reset_pin;         // Reset GPIO pin. Directly from Si4468 SDN pin.
+  uint8_t nirq_pin;          // nIRQ (interrupt request) GPIO pin, active-low.
+                             //   Goes low when the radio has an event (TX done, RX packet, fault).
+  bool reset_active_high;    // True if reset pin is active-high (depends on PCB design).
+  uint8_t channel;           // Default RF channel number for TX/RX operations.
 } radio_config_t;
 
-/** @brief Radio device handle. */
+/** @brief Radio device handle. Allocate one and pass to all radio_* functions. */
 typedef struct {
-  radio_config_t config;     /** @brief Active configuration. */
-  bool apply_errata_12;      /** @brief True if Si446x errata 12 workaround should be applied. */
+  radio_spi_t spi_config;    // SPI bus + chip select pin for this device.
+  radio_config_t config;     // Active device configuration.
+  bool apply_errata_12;      // True if Si446x errata 12 workaround should be applied.
+                             //   Set automatically during radio_init(). Fixes a known PLL lock bug.
 } radio_t;
 
 /**************************************************************************************************
@@ -55,11 +62,12 @@ typedef struct {
  * Configures SPI and GPIO pins, performs a hardware reset, sends the power-up
  * command sequence, and optionally applies the errata 12 workaround.
  *
- * @param dev     Pointer to the radio device handle.
- * @param config  Pointer to the radio configuration.
+ * @param dev        Pointer to the radio device handle.
+ * @param spi_config Pointer to the SPI configuration (instance + SS pin).
+ * @param config     Pointer to the radio configuration (reset/nirq pins, channel).
  * @return TI_ERRC_NONE on success, or an appropriate error code on failure.
  */
-enum ti_errc_t radio_init(radio_t *dev, const radio_config_t *config);
+enum ti_errc_t radio_init(radio_t *dev, const radio_spi_t *spi_config, const radio_config_t *config);
 
 /**
  * @brief Performs a hardware reset of the Si4468.

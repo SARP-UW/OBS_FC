@@ -41,10 +41,15 @@ typedef struct {
     tmp125_mode_t mode;  // Desired power mode
 } tmp125_config_t;
 
+/** @brief SPI config for TMP125 */
+typedef struct {
+    uint8_t  spi_inst;      // SPI instance (e.g., 1 for SPI1)
+    uint8_t  ss_pin;        // SPI Slave Select pin number
+} tmp125_spi_t;
+
 /** @brief TMP125 device handle */
 typedef struct {
-    uint8_t spi_inst;        // SPI instance (e.g., 1 for SPI1)
-    uint8_t ss_pin;          // SPI Slave Select pin number
+    tmp125_spi_t  spi_config; // SPI config for TMP125
     tmp125_config_t config;  // Sensor configuration
 } tmp125_t;
 
