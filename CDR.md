@@ -43,7 +43,7 @@ This file serves to provide links for code files for those attending the CDR to 
 - Magnetometer  
   - Todo  
 - IMU  
-  - Todo  
+  - [imu.h](https://github.com/SARP-UW/titan/blob/main/src/devices/imu.h)
 - Actuator  
   - [actuator.h](https://github.com/SARP-UW/titan/blob/main/src/devices/actuator.h)  
   - [actuator.c](https://github.com/SARP-UW/titan/blob/main/src/devices/actuator.c)  
