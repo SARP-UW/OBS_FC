@@ -47,7 +47,7 @@ static inline enum ti_errc_t validate_dev_values(barometer_t *dev) {
     enum ti_errc_t status = TI_ERRC_NONE;
 
     //Check that SPI instance is valid
-    if ((dev->spi_inst < 1) || (dev->spi_inst > 6)) status = TI_ERRC_INVALID_ARG;
+    if ((dev->spi_dev.inst < 1) || (dev->spi_dev.inst > 6)) status = TI_ERRC_INVALID_ARG;
 
     //TODO: May also want to check CS pin
 
@@ -88,7 +88,7 @@ static uint32_t barometer_transfer(barometer_t *dev, uint8_t cmd, uint8_t bytes_
     uint8_t rx[4] = {0, 0, 0, 0};
     uint32_t result = 0;
 
-    spi_transfer_sync(dev->spi_inst, dev->ss_pin, tx, rx, bytes_to_read + 1);
+    spi_transfer_sync(dev->spi_dev.inst, dev->spi_dev.ss_pin, tx, rx, bytes_to_read + 1);
 
     if (bytes_to_read == 2) {
         result = (uint32_t)((rx[1] << 8) | rx[2]);
@@ -125,11 +125,9 @@ enum ti_errc_t barometer_init(barometer_t *dev) {
     return TI_ERRC_NONE;
 }
 
-barometer_result_t *get_barometer_data(barometer_t *dev) {
+enum ti_errc_t get_barometer_data(barometer_t *dev) {
     barometer_result_t result;
     barometer_result_t *ptr_result = &result;
-
-    result.errc = TI_ERRC_NONE;
 
     // Get raw D1 pressure data
     barometer_transfer(dev, D1_BASE_CMD + dev->osr, 0);
@@ -141,7 +139,7 @@ barometer_result_t *get_barometer_data(barometer_t *dev) {
     barometer_delay(dev->osr);
     uint32_t D2 = barometer_transfer(dev, ADC_READ, 3);
 
-    if ((D1 || D2) <= 0) result.errc = TI_ERRC_UNKNOWN;
+    if ((D1 || D2) <= 0) return TI_ERRC_UNKNOWN;
 
     // Calculate temperature difference
     int32_t dT = D2 - ((int32_t)dev->calibration_data.t_ref << 8);
@@ -179,14 +177,10 @@ barometer_result_t *get_barometer_data(barometer_t *dev) {
     int32_t P = (((D1 * sens) >> 21) - off) >> 15;
 
     // Results
-    result.pressure    = (float)P / 100.0f;    // Units of mbar/hPa
-    result.temperature = (float)temp / 100.0f; // Units of Celcius
+    dev->result.pressure    = (float)P / 100.0f;    // Units of mbar/hPa
+    dev->result.temperature = (float)temp / 100.0f; // Units of Celcius
 
-    if ((result.pressure || result.temperature) <= 0) result.errc = TI_ERRC_UNKNOWN;
+    if ((result.pressure <= 0 || result.temperature) <= 0) return TI_ERRC_UNKNOWN;
 
-    return ptr_result;
+    return TI_ERRC_NONE;
 }
-
-/**
- * TODO:
- * 1. Do I need to initialize spi via spi_init or should the client do this before using the barometer */

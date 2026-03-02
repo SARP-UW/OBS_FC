@@ -40,6 +40,14 @@ typedef enum {
 }barometer_osr_t;
 
 /**
+ * @brief SPI specifications
+ */
+typedef struct {
+    uint8_t inst;
+    uint8_t ss_pin; 
+}barometer_spi_dev;
+
+/**
  * @brief Configuration data
  */
 typedef struct {
@@ -49,7 +57,7 @@ typedef struct {
     uint16_t tco;      // C4 Temperature coefficient of pressure offset
     uint16_t t_ref;    // C5 Reference temperature
     uint16_t tempsens; // C6 Temperature coefficient of the temperature
-}barometer_calibration_data_t; //TODO: Is it more acurate to call this barometer_calibration_data_t?
+}barometer_calibration_data_t; 
 
 /**
  * @brief Pressure and temperature results
@@ -57,17 +65,16 @@ typedef struct {
 typedef struct {
     float pressure;    // Temperature compensated pressure from 10 mbar to 1200 mbar with 0.01 mbar resolution
     float temperature; // Temperature from -40 C to 85 C with 0.01 C resulution
-    enum ti_errc_t errc;
 }barometer_result_t;
 
 /**
  * @brief Barometer device struct
  */
 typedef struct {
-    uint8_t  spi_inst;      // SPI instance (e.g., 1 for SPI1)
-    uint8_t  ss_pin;        // SPI Slave Select pin number
-    barometer_osr_t osr;                 // Oversampling setting
+    barometer_spi_dev spi_dev;                     // SPI specifications
+    barometer_osr_t osr;                           // Oversampling setting
     barometer_calibration_data_t calibration_data; // Device configuration
+    barometer_result_t result;                     // Sampled pressure and temperature
 } barometer_t;
 
 /**************************************************************************************************
@@ -78,7 +85,7 @@ typedef struct {
  * @brief Initializes the MS561101BA03 barometer and loads calibration data.
  *
  * @param dev pointer to the barometer_t structure
- * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
+ * @return ti_errc_t TI_ERRC_NONE if no errors occur, and an error code otherwise
  */
 enum ti_errc_t barometer_init(barometer_t *dev);
 
@@ -86,6 +93,6 @@ enum ti_errc_t barometer_init(barometer_t *dev);
  * @brief Performs a conversion and calculates compensated pressure and temperature.
  *
  * @param dev pointer to the barometer_t structure
- * @return a pointer to the barometer_result_t struct, which contains the pressure and temperature
+ * @return ti_errc_t TI_ERRC_NONE if no errors occur, and an error code otherwise
  */
-barometer_result_t *get_barometer_data(barometer_t *dev);
+enum ti_errc_t get_barometer_data(barometer_t *dev);
