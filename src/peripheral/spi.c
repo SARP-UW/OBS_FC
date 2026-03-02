@@ -1,6 +1,6 @@
 /**
  * This file is part of the Titan Flight Computer Project
- * Copyright (c) 2024 UW SARP
+ * Copyright (c) 2026 UW SARP
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,421 +15,318 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * 
  * @file peripheral/spi.c
- * @authors Charles Faisandier, Jude Merritt
+ * @authors Jude Merritt
  * @brief Implementation of SPI driver interface
  */
-#include "spi.h"
+
+#include "peripheral/spi.h"
 #include "internal/mmio.h"
-#include "gpio.h"
+#include "peripheral/gpio.h"
 #include <stdint.h>
-// #include "mutex.h"
-#include "errc.h"
-#include "internal/dma.h"
 
-#define DATA_REG_SIZE 32
-#define MAX_DEVICES_PER_INSTANCE 5
-#define MAX_PRESCALER 256
+#define INST1_SCK 44
+#define INST1_MISO 45
+#define INST1_MOSI 46
 
-/**************************************************************************************************
- * @section Internal Data Structures
- **************************************************************************************************/
-// Used to look up SPI DMAMUX request numbers
-// Note: SPI6 Does not seem to have requests
-// Index 0 is RX index 1 is TX
-const static uint8_t spi_dmamux_req[SPI_INSTANCE_COUNT][2] = {
-    [1] = {
-        [0] = 37,
-        [1] = 38,
-    },
-    [2] = {
-        [0] = 39,
-        [1] = 40,
-    },
-    [3] = {
-        [0] = 61,
-        [1] = 62,
-    },
-    [4] = {
-        [0] = 83,
-        [1] = 84,
-    },
-    [5] = {
-        [0] = 85,
-        [1] = 86,
-    }
+#define INST2_SCK 73
+#define INST2_MISO 74
+#define INST2_MOSI 75
+
+#define INST3_SCK 109
+#define INST3_MISO 110
+#define INST3_MOSI 111
+
+#define INST4_SCK 1
+#define INST4_MISO 4
+#define INST4_MOSI 5
+
+#define INST5_SCK 21
+#define INST5_MISO 22
+#define INST5_MOSI 23
+
+#define INST6_SCK 125
+#define INST6_MISO 126
+#define INST6_MOSI 127
+
+
+// SPI instances
+enum inst {
+    INST_ONE = 1,
+    INST_TWO,
+    INST_THREE,
+    INST_FOUR,
+    INST_FIVE,
+    INST_SIX
 };
 
-// Stores SPI contexts
-static spi_context_t spi_context_arr[SPI_INSTANCE_COUNT + 1][MAX_DEVICES_PER_INSTANCE] = {0};
-
-// Store config
-static spi_config_t configs[SPI_INSTANCE_COUNT + 1] = {0};
-
-// Mutexes/
-// struct ti_mutex_t mutex[SPI_INSTANCE_COUNT + 1];
-
-// Timeouts
-// uint32_t mutex_timeouts[SPI_INSTANCE_COUNT + 1];
-
-/**************************************************************************************************
- * @section Private Function Implementations
- **************************************************************************************************/
-inline static bool check_spi_config_validity(spi_config_t *spi_config) {
-    if (spi_config == NULL) {
-        return false;
+// Enables the clock of all SS pins
+static inline void enable_ss_clocks(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_enable_clock(ss_list[i]);
     }
-    if (spi_config->mode < 0 || spi_config->mode > 3) {
-        return false;
-    }
-    if (spi_config->data_size != 8 && spi_config->data_size != 16) {
-        return false;
-    }
-    if (spi_config->baudrate_prescaler < 2 ||
-        spi_config->baudrate_prescaler > MAX_PRESCALER ||
-        spi_config->baudrate_prescaler & (spi_config->baudrate_prescaler - 1)) {
-        return false;
-    }
-    if (spi_config->first_bit < 0 || spi_config->first_bit > 1) {
-        return false;
-    }
-    return true;
 }
 
-static void spi_dma_callback(bool success, spi_context_t *context) {
-    // De-init spi dma transaction if both streams are finished.
-    // spi_callback_t callback = context->callback;
-    // uint8_t instance = context->device.instance;
-    // if (success) {
-    //     context->num_complete++;
-    // } else {
-    //     spi_unblock(context->device);
-    //     callback(false);
-    // }
-    // if (context->num_complete == 2) {
-    //     // Disable DMA requests
-    //     CLR_FIELD(SPIx_CFG1[instance], SPIx_CFG1_RXDMAEN);
-    //     CLR_FIELD(SPIx_CFG1[instance], SPIx_CFG1_TXDMAEN);
-    //     context->num_complete = 0;
-    //     spi_unblock(context->device);
-    //     callback(true);
-    // }
+// Sets all SS pins to push pull mode
+static inline void ss_push_pull(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_set_drain(ss_list[i], 0);
+    }
 }
 
-static bool check_device_valid(spi_device_t device) {
-    if (device.instance > SPI_INSTANCE_COUNT)
-        return false;
-    if (device.gpio_pin == 0 || device.gpio_pin > 140)
-        // TODO: Implement better way to check if gpio pin is valid
-        return false;
-    return true;
+// Sets all SS pins to output mode
+static inline void ss_output_mode(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_set_mode(ss_list[i], 1);
+    }
 }
 
-/**************************************************************************************************
- * @section Public Function Implementations
- **************************************************************************************************/
-/**
- * @brief Initializes an SPI controller. Configures a TX and RX DMA stream for the SPI peripheral. 
- * It's important to choose SPI parameters that are compatible with all devices that will share the
- * controller.
- * 
- * @param flag Flag pointer for error heandling
- * @param spi_config Point to spi_config structure
- * @param tx_stream DMA configuration for TX stream
- * @param rx_stream DMA configuration for RX stream
- */
-int spi_init(uint8_t instance, spi_config_t *spi_config) {
-    // Parameter checking
-    if (instance > SPI_INSTANCE_COUNT)
-        return TI_ERRC_INVALID_ARG;
-    if (!check_spi_config_validity(spi_config))
-        return TI_ERRC_INVALID_ARG;
-    
-    // Save the spi_config
-    configs[instance] = *spi_config;
+// Sets all SS pins to high
+static inline void ss_high(uint8_t* ss_list, uint8_t slave_count) {
+    for (int i = 0; i < slave_count; i++) {
+        tal_set_pin(ss_list[i], 1);
+    }
+}
 
-    // Enable gpio clocks for miso mosi and clk
-    tal_enable_clock(spi_config->miso_pin);
-    tal_enable_clock(spi_config->mosi_pin);
-    tal_enable_clock(spi_config->clk_pin);
+int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
+    if (inst > 6 || inst < 1) {
+        return -1;
+    }
 
-    // Set gpio drain push-pull
-    tal_set_drain(spi_config->miso_pin, 0);
-    tal_set_drain(spi_config->mosi_pin, 0);
-    tal_set_drain(spi_config->clk_pin, 0);
-
-    // Set alternate function mode
-    tal_set_mode(spi_config->miso_pin, 2);
-    tal_set_mode(spi_config->mosi_pin, 2);
-    tal_set_mode(spi_config->clk_pin, 2);
-
-    // Create mutexes
-    // ti_create_mutex(&mutex[instance]);
-
-    // Set alternate function
-    // TODO: Set alternate function
-    tal_alternate_mode(spi_config->clk_pin, 6);
-    tal_alternate_mode(spi_config->mosi_pin, 6);
-    tal_alternate_mode(spi_config->miso_pin, 6);
-
-    // Set gpio speed
-    tal_set_speed(spi_config->miso_pin, 3);
-    tal_set_speed(spi_config->mosi_pin, 3);
-    tal_set_speed(spi_config->clk_pin, 2);
-
-    // Enable SPI Peripheral Clock
-    switch (instance) {
-        case (1):
-            // SET_FIELD(RCC_APB2ENR, RCC_APB2ENR_SPI[1]); // TODO: Can't find this field
+    // Enable clocks for MOSI, MISO, and SCK
+    switch (inst) {
+        case INST_ONE:
+            SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOAEN);
             break;
-        case (2):
+        case INST_TWO:
+            SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOBEN);
+            break;
+        case INST_THREE:
+            SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOCEN);
+            break;
+        case INST_FOUR:
+            SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOEEN);
+            break;
+        case INST_FIVE:
+            SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOFEN);
+            break;
+        case INST_SIX:
+            SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOGEN);
+            break;
+    }
+
+    // Enable clocks for all SS pins
+    enable_ss_clocks(ss_list, slave_count);
+
+    // Configure pins
+    switch (inst) {
+        case INST_ONE:
+            // Set push pull
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST1_SCK, 0);
+            tal_set_drain(INST1_MOSI, 0);
+            // Set mode 
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST1_SCK, 2);
+            tal_set_mode(INST1_MISO, 2);
+            tal_set_mode(INST1_MOSI, 2);
+            // Set alternate mode
+            tal_alternate_mode(INST1_SCK, 0101);
+            tal_alternate_mode(INST1_MISO, 0101);
+            tal_alternate_mode(INST1_MOSI, 0101);
+            // Set very high speed
+            tal_set_speed(INST1_SCK, 3);
+            tal_set_speed(INST1_MISO, 3);
+            tal_set_speed(INST1_MOSI, 3);
+            break;
+        case INST_TWO:
+            // Set push pull
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST2_SCK, 0);
+            tal_set_drain(INST2_MOSI, 0);
+            // Set mode 
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST2_SCK, 2);
+            tal_set_mode(INST2_MISO, 2);
+            tal_set_mode(INST2_MOSI, 2);
+            // Set alternate mode
+            tal_alternate_mode(INST2_SCK, 0101);
+            tal_alternate_mode(INST2_MISO, 0101);
+            tal_alternate_mode(INST2_MOSI, 0101);
+            // Set very high speed
+            tal_set_speed(INST2_SCK, 3);
+            tal_set_speed(INST2_MISO, 3);
+            tal_set_speed(INST2_MOSI, 3);
+            break;
+        case INST_THREE:
+            // Set push pull
+            ss_push_pull(ss_list, slave_count); 
+            tal_set_drain(INST3_SCK, 0);
+            tal_set_drain(INST3_MOSI, 0);
+            // Set mode 
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST3_SCK, 2);
+            tal_set_mode(INST3_MISO, 2);
+            tal_set_mode(INST3_MOSI, 2);
+            // Set alternate mode
+            tal_alternate_mode(INST3_SCK, 0110);
+            tal_alternate_mode(INST3_MISO, 0110);
+            tal_alternate_mode(INST3_MOSI, 0110);
+            // Set very high speed
+            tal_set_speed(INST3_SCK, 3);
+            tal_set_speed(INST3_MISO, 3);
+            tal_set_speed(INST3_MOSI, 3);
+            break;
+        case INST_FOUR:
+            // Set push pull
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST4_SCK, 0);
+            tal_set_drain(INST4_MOSI, 0);
+            // Set mode 
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST4_SCK, 2);
+            tal_set_mode(INST4_MISO, 2);
+            tal_set_mode(INST4_MOSI, 2);
+            // Set alternate mode
+            tal_alternate_mode(INST4_SCK, 0101);
+            tal_alternate_mode(INST4_MISO, 0101);
+            tal_alternate_mode(INST4_MOSI, 0101);
+            // Set very high speed
+            tal_set_speed(INST4_SCK, 3);
+            tal_set_speed(INST4_MISO, 3);
+            tal_set_speed(INST4_MOSI, 3);
+            break;
+        case INST_FIVE:
+            // Set push pull
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST5_SCK, 0);
+            tal_set_drain(INST5_MOSI, 0);
+            // Set mode 
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST5_SCK, 2);
+            tal_set_mode(INST5_MISO, 2);
+            tal_set_mode(INST5_MOSI, 2);
+            // Set alternate mode
+            tal_alternate_mode(INST5_SCK, 0101);
+            tal_alternate_mode(INST5_MISO, 0101);
+            tal_alternate_mode(INST5_MOSI, 0101);
+            // Set very high speed
+            tal_set_speed(INST5_SCK, 3);
+            tal_set_speed(INST5_MISO, 3);
+            tal_set_speed(INST5_MOSI, 3);
+            break;
+        case INST_SIX:
+            // Set push pull
+            ss_push_pull(ss_list, slave_count);
+            tal_set_drain(INST6_SCK, 0);
+            tal_set_drain(INST6_MOSI, 0);
+            // Set mode 
+            ss_output_mode(ss_list, slave_count);
+            tal_set_mode(INST6_SCK, 2);
+            tal_set_mode(INST6_MISO, 2);
+            tal_set_mode(INST6_MOSI, 2);
+            // Set alternate mode
+            tal_alternate_mode(INST6_SCK, 0101);
+            tal_alternate_mode(INST6_MISO, 0101);
+            tal_alternate_mode(INST6_MOSI, 0101);
+            // Set very high speed
+            tal_set_speed(INST6_SCK, 3);
+            tal_set_speed(INST6_MISO, 3);
+            tal_set_speed(INST6_MOSI, 3);
+            break;
+    }
+
+    // High speed clock enable
+    SET_FIELD(RCC_CR, RCC_CR_HSION);
+    while(!READ_FIELD(RCC_CR, RCC_CR_HSIRDY));
+
+    // Set clock source
+    if (inst < 4) {
+        WRITE_FIELD(RCC_D2CCIP1R, RCC_D2CCIP1R_SPI123SRC, 0b100);
+    } else if (inst == 4 || inst == 5) {
+        WRITE_FIELD(RCC_D2CCIP1R, RCC_D2CCIP1R_SPI45SRC, 0b011);
+    } else { // (inst == 6)
+        WRITE_FIELD(RCC_D3CCIPR, RCC_D3CCIPR_SPI6SRC, 0b011);
+    }
+    // Enable SPI clock
+    switch (inst) {
+        case INST_ONE:
+            SET_FIELD(RCC_APB2ENR, RCC_APB2ENR_SPI1EN);
+            break;
+        case INST_TWO:
             SET_FIELD(RCC_APB1LENR, RCC_APB1LENR_SPIxEN[2]);
             break;
-        case (3):
+        case INST_THREE:
             SET_FIELD(RCC_APB1LENR, RCC_APB1LENR_SPIxEN[3]);
             break;
-        case (4):
-            // SET_FIELD(RCC_APB2ENR, RCC_APB2ENR_SPI4EN); // TODO: Can't find this field
+        case INST_FOUR:
+            SET_FIELD(RCC_APB2ENR, RCC_APB2ENR_SPI4EN);
             break;
-        case (5):
-            // SET_FIELD(RCC_APB2ENR, RCC_ABP2ENR_SPI5EN); // TODO: Can't find this field
+        case INST_FIVE:
+            SET_FIELD(RCC_APB2ENR, RCC_APB2ENR_SPI5EN);
             break;
-        case (6):
-            // SET_FIELD(RCC_ABP4ENR, RCC_ABP4ENR_SPI6EN); // TODO: Can't find this field
-            break;
-    }
-
-    // Configure SPI Mode
-    switch (spi_config->mode) {
-        case (0):
-            CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPOL);
-            CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPHA);
-            break;
-        case (1):
-            CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPOL);
-            SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPHA);
-            break;
-        case (2):
-            SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPOL);
-            CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPHA);
-            break;
-        case (3):
-            SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPOL);
-            SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_CPHA);
+        case INST_SIX:
+            SET_FIELD(RCC_APB4ENR, RCC_APB4ENR_SPI6EN);
             break;
     }
-
-    // Configure Baude Rate Prescaler
-    switch (spi_config->baudrate_prescaler) {
-        case (256):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b111);
-            break;
-        case (128):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b110);
-            break;
-        case (64):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b101);
-            break;
-        case (32):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b100);
-            break;
-        case (16):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b011);
-            break;
-        case (8):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b010);
-            break;
-        case (4):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b001);
-            break;
-        case (2):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_MBR, 0b000);
-            break;
-    }
-
-    // Set the Data Frame Format
-    switch (spi_config->data_size) {
-        case (16):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_DSIZE, 0b1111);
-            break;
-        case (8):
-            WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_DSIZE, 0b111);
-            break;
-    }
-
-    // Configure First Bit Transmitted
-    switch (spi_config->first_bit) {
-        case (0):
-            SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_LSBFRST);
-            break;
-        case (1):
-            CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_LSBFRST);
-            break;
-    }
-
-    // Configure as master
-    SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_MASTER);
-
-    // Conffigure SPI software-NSS
-    CLR_FIELD(SPIx_CFG2[instance], SPIx_CFG2_SSOE);
-    SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_SSM);
-
-    // Maybe not needed
-    WRITE_FIELD(SPIx_CFG1[instance], SPIx_CFG1_FTHVL, 0x0);
-    SET_FIELD(SPIx_CFG2[instance], SPIx_CFG2_AFCNTR);
-
-    // Enable the SPI
-    SET_FIELD(SPIx_CR1[instance], SPIx_CR1_SPE);
-
-    return TI_ERRC_NONE;
-}
-
-int spi_device_init(spi_device_t device) {
-    // TODO: Implement this function
-    if (!check_device_valid(device))
-        return TI_ERRC_INVALID_ARG;
-
-    // De-reference struct for readablity
-    uint8_t instance = device.instance;
-    uint8_t gpio_pin = device.gpio_pin;
-
-    // Enable GPIO port clock
-    tal_enable_clock(gpio_pin);
-
-    // Configure pin mode as output
-    tal_set_mode(gpio_pin, 1);
-
-    // Set up device context
-    bool found = false;
-    for (int i = 0; i < MAX_DEVICES_PER_INSTANCE; i++) {
-        if (spi_context_arr[instance][i].device.gpio_pin == 0) {
-            spi_context_arr[instance][i].device = device;
-            found = true;
-            break;
-        }
-    }
-    if (!found)
-        return TI_ERRC_SPI_MAX_DEV;
-
-    // Set initial state
-    tal_pull_pin(gpio_pin, 1);
-    tal_set_pin(gpio_pin, 1);
-
-    return TI_ERRC_NONE;
-}
-
-bool spi_is_blocked(spi_device_t device) {
-    // True when mutex is locked and pin is low.
-    return !tal_read_pin(device.gpio_pin);
-    // return (ti_is_mutex_locked(mutex[device.instance]) && !tal_read_pin(device.gpio_pin));
-}
-
-int spi_transfer_sync(struct spi_sync_transfer_t *transfer) {
-    spi_device_t device = transfer->device;
-    void *source = transfer->source;
-    void *dest = transfer->dest;
-    size_t size = transfer->size;
-    uint32_t timeout = transfer->timeout;
-    bool read_inc = transfer->read_inc;
-    asm("BKPT #0");
-
-    // Perform blocking transfer
-    for (int i = 0; i < size; i++) {
-        while (!READ_FIELD(SPIx_SR[device.instance], SPIx_SR_TXP));
-        *SPIx_TXDR[device.instance] = ((uint8_t *)source)[i];
-        SET_FIELD(SPIx_CR1[device.instance], SPIx_CR1_CSTART);
-        ((uint8_t *)dest)[i] = *SPIx_TXDR[device.instance];
-    }
-
-    return TI_ERRC_NONE;
-}
-
- int spi_transfer_async(struct spi_async_transfer_t *transfer) {
-    return 0;
- }
-//     spi_device_t device = transfer->device;
-//     void *source = transfer->source;
-//     void *dest = transfer->dest;
-//     size_t size = transfer->size;
-//     spi_callback_t callback = transfer->callback;
-//     bool write_fifo = transfer->write_fifo;
-//     bool read_fifo = transfer->read_fifo;
-//     bool write_mem_inc = transfer->write_mem_inc;
-//     bool read_mem_inc = transfer->read_mem_inc;
-
-//     // If spi transaction isn't locked, exit w/ error.
-//     if (!spi_is_blocked(device)) {
-//         return TI_ERRC_SPI_NOT_LOCKED;
-//     }
-
-//     // Get context
-//     spi_context_t *context = NULL;
-//     for (int i = 0; i < MAX_DEVICES_PER_INSTANCE; i++) {
-//         if (spi_context_arr[device.instance][i].device.instance == device.instance &&
-//             spi_context_arr[device.instance][i].device.gpio_pin == device.gpio_pin) {
-//             context = &(spi_context_arr[device.instance][i]);
-//         }
-//     }
-//     if (context == NULL)
-//         return TI_ERRC_SPI_NO_CONTEXT;
-//     context->callback = callback;
     
-//     // TX Transfer
-//     dma_transfer_t tx_transfer = {
-//         .request_id = spi_dmamux_req[device.instance][1],
-//         .direction = MEM_TO_PERIPH,
-//         .src_data_size = configs[device.instance].data_size,
-//         .dest_data_size = configs[device.instance].data_size,
-//         .priority = configs[device.instance].priority,
-//         .callback = &spi_dma_callback,
-//         .fifo_enabled = !transfer->write_fifo,
-//         .src = source,
-//         .dest = SPIx_TXDR[device.instance],
-//         .size = size,
-//         .context = context,
-//         .mem_inc = write_mem_inc,
-//     };
-//     dma_start_transfer(&tx_transfer);
+    // Ensure SS lines are high
+    ss_high(ss_list, slave_count);
 
-//     // RX Transfer
-//     uint16_t dummy_buffer;
-//     dma_transfer_t rx_transfer = {
-//         .request_id = spi_dmamux_req[device.instance][0],
-//         .direction = PERIPH_TO_MEM,
-//         .src_data_size = configs[device.instance].data_size,
-//         .dest_data_size = configs[device.instance].data_size,
-//         .priority = configs[device.instance].priority,
-//         .callback = &spi_dma_callback,
-//         .fifo_enabled = false,
-//         .src = SPIx_RXDR[device.instance],
-//         .dest = &dummy_buffer,
-//         .size = size,
-//         .context = context,
-//         .mem_inc = read_mem_inc,
-//     };
-//     dma_start_transfer(&rx_transfer);
+    // Ensure SPI hardware is disabled before config
+    CLR_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
+    while(READ_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE));
+    // Clear mode selection field
+    CLR_FIELD(SPIx_CGFR[inst], SPIx_CGFR_I2SMOD);
+    // Set threshold level
+    WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_FTHVL, 0x00);
+    // Set baudrate prescaler ( 64MHz /8  = 8MHz) 
+    WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_MBR, 0b111); 
+    // Set data size
+    WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_DSIZE, 0b00111);
+    // Set clock polarities
+    CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPOL);
+    CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPHA);
+    // Slave management
+    SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_SSM);
+    SET_FIELD(SPIx_CR1[inst], SPIx_CR1_SSI);
+    // Set SPI as master
+    SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_MASTER);
 
-//     // Enable DMA requests
-//     SET_FIELD(SPIx_CFG1[device.instance], SPIx_CFG1_RXDMAEN);
-//     SET_FIELD(SPIx_CFG1[device.instance], SPIx_CFG1_TXDMAEN);
+    return 1;
+}
 
+int spi_transfer_sync(uint8_t inst, uint8_t ss_pin, void* src, void* dst, uint8_t size) {
+    if (size == 0 || ss_pin > 255) return -1;
 
-//     return TI_ERRC_NONE;
-//  }
+    CLR_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
+    WRITE_FIELD(SPIx_CR2[inst], SPIx_CR2_TSIZE, size);
+    SET_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
 
-// int spi_block(spi_device_t device) {
-//     // int errc = ti_acquire_mutex(mutex[device.instance], mutex_timeouts[device.instance]);
-//     // if (errc != TI_ERRC_NONE) {
-//     //     return errc;
-//     // }
-//     tal_set_pin(device.gpio_pin, 0);
-//     return TI_ERRC_NONE;
-// }
+    while(!READ_FIELD(SPIx_SR[inst], SPIx_SR_TXP));
 
-// int spi_unblock(spi_device_t device) {
-//     tal_set_pin(device.gpio_pin, 1);
-//     // int errc = ti_release_mutex(mutex[device.instance], mutex_timeouts[device.instance]);
-//     // if (errc != TI_ERRC_NONE) {
-//     //     return 1;
-//     // }
-//     return TI_ERRC_NONE;
-// }
+    // Pull SS pin low
+    tal_set_pin(ss_pin, 0);
+
+    for (int i = 0; i < size; i++) {
+        while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_TXP));
+        *(volatile uint8_t *)SPIx_TXDR[inst] = ((uint8_t *)src)[i];
+
+        // Start transfer
+        if (i == 0) {
+            SET_FIELD(SPIx_CR1[inst], SPIx_CR1_CSTART);
+        }
+
+        while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_RXP) && !READ_FIELD(SPIx_SR[inst], SPIx_SR_EOT));
+
+        ((uint8_t *)dst)[i] = *(volatile uint8_t *)SPIx_RXDR[inst];
+    }
+
+    // Wait for end of tranfer
+    while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_EOT));
+    SET_FIELD(SPIx_IFCR[inst], SPIx_IFCR_EOTC);
+
+    // Pull SS pin high to end transfer
+    tal_set_pin(ss_pin, 1);
+
+    return 1;
+}

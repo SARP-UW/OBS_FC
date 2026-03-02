@@ -20,9 +20,9 @@
  */
 
 #include <stdint.h>
-#include "include/mmio.h"
-#include "include/errc.h"
-#include "myWork/systick.h"
+#include "../internal/mmio.h"
+#include "errc.h"
+#include "systick.h"
 
 // ((480 * 1,000,000) * 0.001 - 1)
 // 1ms countdown

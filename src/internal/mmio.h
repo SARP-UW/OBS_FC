@@ -226,48 +226,6 @@ static UART_Regs UART_MAP[9] = {
 })
 
 /**************************************************************************************************
- * @section Actuator (MAX22216/MAX22217) Register Definitions
- **************************************************************************************************/
-#define ACTUATOR_REG_GLOBAL_CTRL   0x00
-#define ACTUATOR_REG_GLOBAL_CFG    0x01
-#define ACTUATOR_REG_STATUS        0x02
-#define ACTUATOR_REG_STATUS_CFG    0x03
-#define ACTUATOR_REG_DC_H2L        0x04
-#define ACTUATOR_REG_VM_MONITOR    0x05
-#define ACTUATOR_REG_VM_THRESHOLD  0x06
-#define ACTUATOR_REG_F_AC          0x07
-#define ACTUATOR_REG_U_AC_SCAN     0x08
-
-#define ACTUATOR_REG_FAULT0        0x65
-#define ACTUATOR_REG_FAULT1        0x66
-
-#define ACTUATOR_GLOBAL_CTRL_F_PWM_M_POS 4
-#define ACTUATOR_GLOBAL_CTRL_F_PWM_M_MSK (0xFu << ACTUATOR_GLOBAL_CTRL_F_PWM_M_POS)
-#define ACTUATOR_GLOBAL_CTRL_CNTL_POS(ch) (ch)
-
-#define ACTUATOR_GLOBAL_CFG_ACTIVE_POS    15
-#define ACTUATOR_GLOBAL_CFG_MASKS_POS     8
-#define ACTUATOR_GLOBAL_CFG_CNTL_POL_POS  7
-#define ACTUATOR_GLOBAL_CFG_STAT_POL_POS  6
-#define ACTUATOR_GLOBAL_CFG_VDR_MODE_POS  4
-#define ACTUATOR_GLOBAL_CFG_CHS_POS       0
-
-#define ACTUATOR_CFG_CTRL0_CTRL_MODE_POS  14
-#define ACTUATOR_CFG_CTRL0_HHF_EN_POS     13
-#define ACTUATOR_CFG_CTRL0_OL_EN_POS      12
-#define ACTUATOR_CFG_CTRL0_H2L_EN_POS     11
-#define ACTUATOR_CFG_CTRL0_RDWE_POS       10
-#define ACTUATOR_CFG_CTRL0_RMDE_POS       9
-#define ACTUATOR_CFG_CTRL0_RUPE_POS       8
-
-#define ACTUATOR_CFG_CTRL1_HSNLS_POS      10
-#define ACTUATOR_CFG_CTRL1_F_PWM_POS      8
-#define ACTUATOR_CFG_CTRL1_T_BLANK_POS    6
-#define ACTUATOR_CFG_CTRL1_SLEW_POS       4
-#define ACTUATOR_CFG_CTRL1_GAIN_POS       2
-#define ACTUATOR_CFG_CTRL1_SNSF_POS       0
-
-/**************************************************************************************************
  * @section COMP1 Definitions
  **************************************************************************************************/
 
@@ -1310,6 +1268,12 @@ extern const field32_t QUADSPI_CCR_FMODE;       /** @brief Functional mode this 
 extern const field32_t QUADSPI_CCR_SIOO;        /** @brief Send instruction only once mode see section15.3.11: sending the instruction only once on page13. This bit has no effect when IMODE = 00. This field can be written only when BUSY = 0. */
 extern const field32_t QUADSPI_CCR_DHHC;        /** @brief DDR hold delay the data output by 1/4 of the QUADSPI output clock cycle in DDR mode: this feature is only active in DDR mode. This field can be written only when BUSY = 0. */
 extern const field32_t QUADSPI_CCR_DDRM;        /** @brief Double data rate mode this bit sets the DDR mode for the address, alternate byte and data phase: this field can be written only when BUSY = 0. */
+extern const field32_t QUADSPI_PSMKR_REG; 
+extern const field32_t QUADSPI_PSMAR_REG; 
+extern const field32_t QUADSPI_DR_REG; 
+extern const field32_t QUADSPI_AR_REG; 
+extern const field32_t QUADSPI_CCR_REG; 
+extern const field32_t QUADSPI_DLR_DL; 
 extern const field32_t QUADSPI_PIR_INTERVAL;    /** @brief Polling interval number of CLK cycles between to read during automatic polling phases. This field can be written only when BUSY = 0. */
 extern const field32_t QUADSPI_LPTR_TIMEOUT;    /** @brief Timeout period after each access in memory-mapped mode, the QUADSPI prefetches the subsequent bytes and holds these bytes in the FIFO. This field indicates how many CLK cycles the QUADSPI waits after the FIFO becomes full until it raises ncs, putting the flash memory in a lower-consumption state. This field can be written only when BUSY = 0. */
 
@@ -2683,6 +2647,9 @@ extern const field32_t RCC_AHB4ENR_GPIOJEN;                /** @brief 0GPIO peri
 extern const field32_t RCC_AHB4ENR_GPIOKEN;                /** @brief 0GPIO peripheral clock enable. */
 extern const field32_t RCC_AHB4ENR_CRCEN;                  /** @brief CRC peripheral clock enable. */
 extern const field32_t RCC_AHB4ENR_BDMAEN;                 /** @brief BDMA and DMAMUX2 clock enable. */
+extern const field32_t RCC_APB2ENR_SPI1EN;                 /** @brief SPI1 peripheral clocks enable. */
+extern const field32_t RCC_APB2ENR_SPI4EN;                 /** @brief SPI4 peripheral clocks enable. */
+extern const field32_t RCC_APB2ENR_SPI5EN;                 /** @brief SPI5 peripheral clocks enable. */
 extern const field32_t RCC_AHB4ENR_ADC3EN;                 /** @brief ADC3 peripheral clocks enable. */
 extern const field32_t RCC_AHB4ENR_HSEMEN;                 /** @brief HSEM peripheral clock enable. */
 extern const field32_t RCC_AHB4ENR_BKPRAMEN;               /** @brief Backup RAM clock enable. */

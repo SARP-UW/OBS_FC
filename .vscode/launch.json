@@ -4,7 +4,7 @@
         {
           "name": "openocd dev debug CM7",
           "cwd": "${workspaceRoot}",
-          "executable": "${workspaceFolder}/src/build/titan.elf",
+          "executable": "${workspaceFolder}/build/titan.elf",
           "armToolchainPath": "/Applications/ArmGNUToolchain/14.3.rel1/arm-none-eabi/bin",
           "request": "attach",
           "type": "cortex-debug",
@@ -19,7 +19,7 @@
         {
           "name": "openocd test debug CM7",
           "cwd": "${workspaceRoot}",
-          "executable": "${workspaceFolder}/src/build/titan.elf",
+          "executable": "${workspaceFolder}/build/titan.elf",
           "armToolchainPath": "/Applications/ArmGNUToolchain/14.3.rel1/arm-none-eabi/bin",
           "request": "attach",
           "type": "cortex-debug",

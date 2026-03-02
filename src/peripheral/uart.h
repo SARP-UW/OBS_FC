@@ -19,9 +19,9 @@
  * @brief UART Driver Interface. Doesn't support synchronous mode.
  */
 #pragma once
-#include "../internal/dma.h"
+#include "dma.h"
 #include "../internal/mmio.h"
-#include "../util/error.h"
+#include "errc.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -188,7 +188,7 @@ void* alloc(uint32_t size) {
 
     is_free[big_index] &= ~((uint8_t)1 << small_index);
 
-    for(int j = 0; j < POOL_BLOCK_SIZES[i]; j++){ // zero this block before returning
+    for(uint32_t j = 0; j < POOL_BLOCK_SIZES[i]; j++){ // zero this block before returning
         *(((uint8_t*)block) + j) = 0; // changed this to j? not sure why this was i before.
     }
 
@@ -202,7 +202,7 @@ void* alloc(uint32_t size) {
 void free(void* mem) {
 
     uint32_t i = get_pool(mem);
-    if(i == -1){
+    if(i == -1U){
         return; // bad call, already "free" since it's not in heap
     }
 
@@ -230,7 +230,7 @@ bool isFree(void* mem) {
 
     uint32_t index = get_index(mem);
 
-    if(index == -1){
+    if(index == -1U){
         return false;
     }
     uint32_t big_index = index / 8;

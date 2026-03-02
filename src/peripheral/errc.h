@@ -43,6 +43,7 @@ enum ti_errc_t {
   TI_ERRC_MUTEX_UNLOCKED, /** @brief Failed to disable EXTI ISR because mutex is unlocked */
   TI_ERRC_MUTEX_TIMEOUT, /** @brief Failed to disable EXTI ISR because mutex timed out */
   TI_ERRC_SPI_NOT_LOCKED,
+  TI_ERRC_BUSY, /** @brief The device is busy */
 };
 
 /**

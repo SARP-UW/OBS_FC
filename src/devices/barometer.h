@@ -21,8 +21,8 @@
 
 #pragma once
 #include <stdint.h>
-#include "include/spi.h"
-#include "include/errc.h"
+#include "peripheral/spi.h"
+#include "peripheral/errc.h"
 
 /**************************************************************************************************
  * @section Type definitions
@@ -57,14 +57,15 @@ typedef struct {
 typedef struct {
     float pressure;    // Temperature compensated pressure from 10 mbar to 1200 mbar with 0.01 mbar resolution
     float temperature; // Temperature from -40 C to 85 C with 0.01 C resulution
-    ti_errc_t errc;
+    enum ti_errc_t errc;
 }barometer_result_t;
 
 /**
  * @brief Barometer device struct
  */
 typedef struct {
-    spi_device_t device;                 // SPI instance and CS pin
+    uint8_t  spi_inst;      // SPI instance (e.g., 1 for SPI1)
+    uint8_t  ss_pin;        // SPI Slave Select pin number
     barometer_osr_t osr;                 // Oversampling setting
     barometer_calibration_data_t calibration_data; // Device configuration
 } barometer_t;
@@ -79,7 +80,7 @@ typedef struct {
  * @param dev pointer to the barometer_t structure
  * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
  */
-ti_errc_t barometer_init(barometer_t *dev);
+enum ti_errc_t barometer_init(barometer_t *dev);
 
 /**
  * @brief Performs a conversion and calculates compensated pressure and temperature.
