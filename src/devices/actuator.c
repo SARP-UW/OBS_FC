@@ -20,7 +20,7 @@
  * @note Untested driver.
  */
 
-#include "peripheral/actuator.h"
+#include "devices/actuator.h"
 #include "peripheral/gpio.h"
 
 // 16-bit dummy word used for read transactions.
