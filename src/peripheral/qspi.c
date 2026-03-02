@@ -1,3 +1,24 @@
+/**
+ * This file is part of the Titan Flight Computer Project
+ * Copyright (c) 2025 UW SARP
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @file peripheral/qspi.h
+ * @authors Jude Merritt
+ * @brief Quad SPI driver for S25FL064LABMFM010 flash memory chip
+ */
+
 #include <stdint.h>
 #include <stdbool.h>
 #include "../internal/mmio.h"
@@ -54,7 +75,7 @@ void qspi_init() {
     CLR_FIELD(QUADSPI_CR, QUADSPI_CR_DFM);             // Duel-flash mode disabled
     CLR_FIELD(QUADSPI_CR, QUADSPI_CR_FSEL);            // FLASH 1 selected
 
-    WRITE_FIELD(QUADSPI_DCR, QUADSPI_DCR_FSIZE, 23U);  // TODO: Find the number of bytes in MB your external chip has and write n to this register, where n is 2^n = chip bytes (MB)
+    WRITE_FIELD(QUADSPI_DCR, QUADSPI_DCR_FSIZE, 25U);  // Based on the number of bytes the external chip offers (64MB)
     WRITE_FIELD(QUADSPI_DCR, QUADSPI_DCR_CSHT, 3U);     // Defines the minimum number of cycles chip select must remain high
     CLR_FIELD(QUADSPI_DCR, QUADSPI_DCR_CKMODE);         // CLK must stay low when NCS is high
 
